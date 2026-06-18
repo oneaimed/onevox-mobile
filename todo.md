@@ -49,3 +49,9 @@
 - [x] Teste vitest da interpretacao com IA (reescrita)
 - [x] Verificar status / sem erros TS
 - [x] Checkpoint inicial
+
+## Ajustes (rodada 2)
+- [x] Adicionar logo da OneAI no cabecalho + texto "Mobile" proximo ao OneVox (em todas as abas)
+- [x] Perfil: remover lista de outras vozes; mostrar apenas a voz clonada do usuario
+- [x] Otimizar prompt da IA para reescrita mais fiel a intencao (erros graves de digitacao)
+- [x] Usar logo da OneAI como icone do app (icon/splash/favicon/android) e centro do QR

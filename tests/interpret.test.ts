@@ -16,9 +16,26 @@ describe("AI interpretation / rewrite", () => {
 
     expect(typeof out).toBe("string");
     expect(out.length).toBeGreaterThan(0);
-    // Should not just echo the broken input verbatim.
     expect(out).not.toBe(messy);
-    // Should preserve core intent (water / thirst).
     expect(out.toLowerCase()).toMatch(/água|agua|sede/);
   }, 30000);
+
+  it("does NOT answer the user — only reconstructs intent (question stays a question)", async () => {
+    const out = await interpretText("ola tdo bem cm vc hj");
+    // Must remain a greeting/question, not a reply like "Estou bem".
+    expect(out.toLowerCase()).toMatch(/tudo bem|como|olá|ola/);
+    expect(out.toLowerCase()).not.toMatch(/estou bem|recebi sua mensagem/);
+  }, 30000);
+
+  it("logs reconstruction of the hard real-world sample (image 4)", async () => {
+    const hard =
+      "letrcia rrcenoimamrnrnssgemuiyofeia vouredpondes paja bocê vom catinjo tufo munfopodetetptovblrmas e csminjosfificeisna vida euporexrmplo gifiwurisrm falsr eguiavonsrljado prlodrsvsty para tetar sptrndr ia ontrlihrnvia aryigivial";
+    const out = await interpretText(hard);
+    // We can't assert exact text, but it must produce a non-empty Portuguese sentence
+    // and must NOT be the chatbot-style reply we saw before.
+    expect(out.length).toBeGreaterThan(10);
+    expect(out.toLowerCase()).not.toMatch(/fui criado para ser uma inteligência artificial/);
+    // Surface the result for manual inspection.
+    console.log("\n[HARD SAMPLE RECONSTRUCTION]\n", out, "\n");
+  }, 45000);
 });

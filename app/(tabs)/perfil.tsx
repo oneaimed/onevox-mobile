@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -32,9 +31,6 @@ export default function PerfilScreen() {
   const colors = useColors();
   const { settings, updateSettings, history, clearHistory } = useOneVox();
   const { speak, state } = useSpeech();
-  const [voicePickerOpen, setVoicePickerOpen] = useState(false);
-
-  const voicesQuery = trpc.voice.listVoices.useQuery(undefined, { enabled: voicePickerOpen });
 
   const haptic = (style: Haptics.ImpactFeedbackStyle = Haptics.ImpactFeedbackStyle.Light) => {
     if (Platform.OS !== "web") Haptics.impactAsync(style);
@@ -73,68 +69,26 @@ export default function PerfilScreen() {
               </View>
             </View>
 
-            <View style={styles.voiceActions}>
-              <TouchableOpacity
-                onPress={testVoice}
-                disabled={state !== "idle"}
-                activeOpacity={0.85}
-                style={{ flex: 1 }}
+            <TouchableOpacity
+              onPress={testVoice}
+              disabled={state !== "idle"}
+              activeOpacity={0.85}
+              style={{ marginTop: 16 }}
+            >
+              <LinearGradient
+                colors={brandGradient as [string, string, ...string[]]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[styles.testBtn, { opacity: state !== "idle" ? 0.6 : 1 }]}
               >
-                <LinearGradient
-                  colors={brandGradient as [string, string, ...string[]]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={[styles.testBtn, { opacity: state !== "idle" ? 0.6 : 1 }]}
-                >
-                  {state === "generating" ? (
-                    <ActivityIndicator color="#0A1628" size="small" />
-                  ) : (
-                    <IconSymbol name="play.fill" size={18} color="#0A1628" />
-                  )}
-                  <Text style={styles.testText}>Testar voz</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => {
-                  haptic();
-                  setVoicePickerOpen((v) => !v);
-                }}
-                activeOpacity={0.7}
-                style={[styles.switchBtn, { borderColor: colors.border }]}
-              >
-                <IconSymbol name="person.fill" size={18} color={colors.foreground} />
-                <Text style={[styles.switchText, { color: colors.foreground }]}>Trocar</Text>
-              </TouchableOpacity>
-            </View>
-
-            {voicePickerOpen && (
-              <View style={styles.voiceList}>
-                {voicesQuery.isLoading ? (
-                  <ActivityIndicator color={colors.primary} style={{ marginVertical: 12 }} />
-                ) : voicesQuery.data && voicesQuery.data.length > 0 ? (
-                  voicesQuery.data.map((v) => {
-                    const selected = v.voiceId === settings.voiceId;
-                    return (
-                      <TouchableOpacity
-                        key={v.voiceId}
-                        onPress={() => {
-                          haptic();
-                          updateSettings({ voiceId: v.voiceId, voiceName: v.name });
-                          setVoicePickerOpen(false);
-                        }}
-                        activeOpacity={0.7}
-                        style={[styles.voiceOption, { borderColor: selected ? colors.primary : colors.border }]}
-                      >
-                        <Text style={[styles.voiceOptionText, { color: colors.foreground }]}>{v.name}</Text>
-                        {selected && <IconSymbol name="checkmark" size={18} color={colors.primary} />}
-                      </TouchableOpacity>
-                    );
-                  })
+                {state === "generating" ? (
+                  <ActivityIndicator color="#0A1628" size="small" />
                 ) : (
-                  <Text style={[styles.emptyText, { color: colors.muted }]}>Nenhuma voz encontrada.</Text>
+                  <IconSymbol name="play.fill" size={18} color="#0A1628" />
                 )}
-              </View>
-            )}
+                <Text style={styles.testText}>Testar minha voz</Text>
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
         </LinearGradient>
 
