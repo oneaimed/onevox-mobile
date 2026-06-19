@@ -5,7 +5,7 @@ import MaskedView from "@react-native-masked-view/masked-view";
 
 import { brandGradient } from "@/theme.config";
 
-const ONEAI_LOGO = require("@/assets/images/oneai-logo.png");
+const ONEAI_LOGO = require("@/assets/images/Logo enquadrado.jpeg");
 
 /**
  * Wordmark with the OneAI logo, "OneVox" (Vox in brand gradient) and a "Mobile" pill.
