@@ -24,7 +24,7 @@ import { useOneVox } from "@/lib/onevox-store";
 import { trpc } from "@/lib/trpc";
 import { brandGradient } from "@/theme.config";
 
-const ONEAI_LOGO = require("@/assets/images/oneai-logo.png");
+const ONEAI_LOGO = require("@/assets/images/Logo OneAI só escudo.jpeg");
 
 export default function TecladoScreen() {
   const colors = useColors();
@@ -351,7 +351,6 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     borderRadius: 100,
-    transform: [{ translateY: "-5%" }],
   },
   speakLoadingOverlay: {
     ...StyleSheet.absoluteFillObject,
