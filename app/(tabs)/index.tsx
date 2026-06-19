@@ -348,8 +348,8 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   speakLogo: {
-    width: "76%",
-    height: "76%",
+    width: "90%",
+    height: "90%",
     borderRadius: 100,
   },
   speakLoadingOverlay: {
