@@ -30,6 +30,7 @@ const MAPPING = {
   "stop.fill": "stop",
   "trash": "delete-outline",
   "arrow.uturn.backward": "undo",
+  "square.and.arrow.up": "ios-share",
   "checkmark": "check",
   "xmark": "close",
   "sparkles": "auto-awesome",

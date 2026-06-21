@@ -27,6 +27,7 @@ export function useSpeech() {
   const { settings, addHistory } = useOneVox();
   const [state, setState] = useState<SpeechState>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [lastAudioUrl, setLastAudioUrl] = useState<string | null>(null);
   const playerRef = useRef<AudioPlayer | null>(null);
 
   const generateMutation = trpc.voice.generateSpeech.useMutation();
@@ -90,6 +91,7 @@ export function useSpeech() {
           voiceId: options?.voiceId ?? settings.voiceId,
         });
         const absoluteUrl = toAbsoluteUrl(res.url);
+        setLastAudioUrl(absoluteUrl);
         if (options?.record !== null) {
           addHistory({ text: clean, source: options?.record ?? "teclado" });
         }
@@ -111,5 +113,5 @@ export function useSpeech() {
     [generateMutation, settings.voiceId, addHistory, playUrl],
   );
 
-  return { speak, stop, state, error, isBusy: state !== "idle" };
+  return { speak, stop, state, error, lastAudioUrl, isBusy: state !== "idle" };
 }

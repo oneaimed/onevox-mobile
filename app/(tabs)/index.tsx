@@ -1,11 +1,15 @@
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
+  Dimensions,
   Image,
   Keyboard,
+  PanResponder,
   Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -29,7 +33,7 @@ const ONEAI_LOGO = require("@/assets/images/Logo enquadrado.jpeg");
 export default function TecladoScreen() {
   const colors = useColors();
   const { settings, fontSizeFor } = useOneVox();
-  const { speak, state, error } = useSpeech();
+  const { speak, state, error, lastAudioUrl } = useSpeech();
   const [text, setText] = useState("");
   const [lastCleared, setLastCleared] = useState("");
   const [interpreting, setInterpreting] = useState(false);
@@ -232,7 +236,82 @@ export default function TecladoScreen() {
           />
         </View>
       </ScrollView>
+      {lastAudioUrl ? <FloatingShareButton audioUrl={lastAudioUrl} /> : null}
     </ScreenContainer>
+  );
+}
+
+function FloatingShareButton({ audioUrl }: { audioUrl: string }) {
+  const colors = useColors();
+  const startX = Math.max(Dimensions.get("window").width - 112, 240);
+  const pan = useRef(new Animated.ValueXY({ x: startX, y: 440 })).current;
+  const draggedRef = useRef(false);
+
+  const handleShare = async () => {
+    if (!audioUrl) return;
+    if (Platform.OS === "web") {
+      const link = document.createElement("a");
+      link.href = audioUrl;
+      link.download = "onevox-audio.mp3";
+      link.target = "_blank";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      return;
+    }
+    await Share.share({
+      title: "Áudio OneVox",
+      message: audioUrl,
+      url: audioUrl,
+    });
+  };
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 3 || Math.abs(gesture.dy) > 3,
+        onPanResponderGrant: () => {
+          draggedRef.current = false;
+          pan.setOffset({
+            x: (pan.x as any)._value,
+            y: (pan.y as any)._value,
+          });
+          pan.setValue({ x: 0, y: 0 });
+        },
+        onPanResponderMove: (_, gesture) => {
+          if (Math.abs(gesture.dx) > 3 || Math.abs(gesture.dy) > 3) draggedRef.current = true;
+          pan.setValue({ x: gesture.dx, y: gesture.dy });
+        },
+        onPanResponderRelease: () => {
+          pan.flattenOffset();
+          if (!draggedRef.current) {
+            handleShare().catch(() => {});
+          }
+        },
+        onPanResponderTerminate: () => {
+          pan.flattenOffset();
+        },
+      }),
+    [audioUrl, pan],
+  );
+
+  return (
+    <Animated.View
+      {...panResponder.panHandlers}
+      style={[styles.shareFloatingWrap, { transform: pan.getTranslateTransform() }]}
+    >
+      <LinearGradient
+        colors={brandGradient as [string, string, ...string[]]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.shareFloatingBorder}
+      >
+        <View style={[styles.shareFloatingInner, { backgroundColor: colors.background }]}>
+          <IconSymbol name="square.and.arrow.up" size={26} color={colors.primary} />
+        </View>
+      </LinearGradient>
+    </Animated.View>
   );
 }
 
@@ -380,5 +459,28 @@ const styles = StyleSheet.create({
   quickLabel: {
     fontSize: 16,
     fontWeight: "700",
+  },
+  shareFloatingWrap: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    zIndex: 20,
+    elevation: 20,
+  },
+  shareFloatingBorder: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    padding: 1.5,
+    shadowColor: "#34D8A0",
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  shareFloatingInner: {
+    flex: 1,
+    borderRadius: 29,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
