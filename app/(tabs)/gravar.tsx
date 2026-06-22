@@ -12,6 +12,7 @@ import {
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 
+import { FloatingShareButton } from "@/components/floating-share-button";
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { OneVoxWordmark } from "@/components/brand/brand-bits";
@@ -28,7 +29,7 @@ export default function GravarScreen() {
   const colors = useColors();
   const { fontSizeFor, addHistory } = useOneVox();
   const recorder = useRecorder();
-  const { speak, state: speechState } = useSpeech();
+  const { speak, state: speechState, lastAudioUrl } = useSpeech();
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [original, setOriginal] = useState("");
@@ -253,6 +254,7 @@ export default function GravarScreen() {
           </View>
         )}
       </ScrollView>
+      {lastAudioUrl ? <FloatingShareButton audioUrl={lastAudioUrl} /> : null}
     </ScreenContainer>
   );
 }
