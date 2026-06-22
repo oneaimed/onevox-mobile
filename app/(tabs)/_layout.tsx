@@ -9,8 +9,8 @@ import { useColors } from "@/hooks/use-colors";
 export default function TabLayout() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const bottomPadding =
-    Platform.OS === "web" ? Math.max(insets.bottom + 10, 22) : Math.max(insets.bottom, 8);
+  const bottomPadding = Platform.OS === "web" ? Math.max(insets.bottom, 12) : Math.max(insets.bottom, 8);
+  const tabBarOffset = Platform.OS === "web" ? 10 : 0;
   const tabBarHeight = 64 + bottomPadding;
 
   return (
@@ -31,6 +31,7 @@ export default function TabLayout() {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
           borderTopWidth: 0.5,
+          transform: [{ translateY: tabBarOffset }],
         },
       }}
     >
