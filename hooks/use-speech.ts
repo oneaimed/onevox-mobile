@@ -19,6 +19,12 @@ function toAbsoluteUrl(url: string): string {
 
 export type SpeechState = "idle" | "generating" | "playing";
 
+const PLAYBACK_AUDIO_MODE = {
+  playsInSilentMode: true,
+  allowsRecording: false,
+  shouldRouteThroughEarpiece: false,
+};
+
 /**
  * Centralized speech hook: generates audio with the cloned voice via the
  * server (ElevenLabs) and plays it. Tracks state for UI feedback.
@@ -33,7 +39,7 @@ export function useSpeech() {
   const generateMutation = trpc.voice.generateSpeech.useMutation();
 
   useEffect(() => {
-    setAudioModeAsync({ playsInSilentMode: true }).catch(() => {});
+    setAudioModeAsync(PLAYBACK_AUDIO_MODE).catch(() => {});
     return () => {
       try {
         playerRef.current?.remove();
@@ -95,6 +101,7 @@ export function useSpeech() {
         if (options?.record !== null) {
           addHistory({ text: clean, source: options?.record ?? "teclado" });
         }
+        await setAudioModeAsync(PLAYBACK_AUDIO_MODE);
         if (Platform.OS === "web") {
           // On web, use the HTML audio element for reliability.
           const audio = new (globalThis as any).Audio(absoluteUrl);
