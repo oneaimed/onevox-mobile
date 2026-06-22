@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Auth from "@/lib/_core/auth";
 
 const STORAGE_KEYS = {
   settings: "onevox.settings.v1",
@@ -37,6 +38,48 @@ const DEFAULT_SETTINGS: Settings = {
   fontScale: "normal",
   autoInterpret: false,
 };
+
+const VOICE_PROFILES = [
+  {
+    match: "roberto",
+    voiceId: "GMafEIaeEWpGsrYrVqCX",
+    voiceName: "Roberto Dias",
+  },
+  {
+    match: "cassiano",
+    voiceId: "ZhHddHRyxDXlhs2YdQUR",
+    voiceName: "Cassiano",
+  },
+];
+
+function normalizeText(value?: string | null) {
+  return (value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function resolveVoiceProfile(settings: Settings, user: Auth.User | null) {
+  const userName = normalizeText(user?.name);
+  const userProfile = VOICE_PROFILES.find((profile) => userName.includes(profile.match));
+  if (userProfile) return userProfile;
+
+  const voiceProfile = VOICE_PROFILES.find((profile) => profile.voiceId === settings.voiceId);
+  if (voiceProfile) return voiceProfile;
+
+  const savedName = normalizeText(settings.voiceName);
+  return VOICE_PROFILES.find((profile) => savedName.includes(profile.match)) ?? null;
+}
+
+function normalizeSettingsForUser(settings: Settings, user: Auth.User | null): Settings {
+  const profile = resolveVoiceProfile(settings, user);
+  if (!profile) return settings;
+  return {
+    ...settings,
+    voiceId: profile.voiceId,
+    voiceName: profile.voiceName,
+  };
+}
 
 export const DEFAULT_PHRASES: Phrase[] = [
   { id: "p1", text: "Sim, por favor.", category: "necessidades" },
@@ -88,12 +131,18 @@ export function OneVoxStoreProvider({ children }: { children: React.ReactNode })
   useEffect(() => {
     (async () => {
       try {
+        const user = await Auth.getUserInfo();
         const [s, h, p] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEYS.settings),
           AsyncStorage.getItem(STORAGE_KEYS.history),
           AsyncStorage.getItem(STORAGE_KEYS.phrases),
         ]);
-        if (s) setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(s) });
+        const loadedSettings = s ? { ...DEFAULT_SETTINGS, ...JSON.parse(s) } : DEFAULT_SETTINGS;
+        const normalizedSettings = normalizeSettingsForUser(loadedSettings, user);
+        setSettings(normalizedSettings);
+        if (JSON.stringify(normalizedSettings) !== JSON.stringify(loadedSettings)) {
+          AsyncStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(normalizedSettings)).catch(() => {});
+        }
         if (h) setHistory(JSON.parse(h));
         if (p) setPhrases(JSON.parse(p));
       } catch (e) {
