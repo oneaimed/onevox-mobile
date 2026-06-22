@@ -9,6 +9,7 @@ dist/
 web-build/
 web-dist/
 web-dist-check/
+web-dist-vercel-check/
 expo-env.d.ts
 
 # Native
