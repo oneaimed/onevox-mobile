@@ -8,7 +8,7 @@ import { publicProcedure, router } from "./_core/trpc";
 import { transcribeAudio } from "./_core/voiceTranscription";
 import { generateSpeech, getVoice, listVoices } from "./elevenlabs";
 import { interpretText } from "./interpret";
-import { storagePut } from "./storage";
+import { storageKeyFromUrl, storagePut } from "./storage";
 
 // Default cloned voice (Roberto Dias). Can be overridden per request from the client.
 const DEFAULT_VOICE_ID = "GMafEIaeEWpGsrYrVqCX";
@@ -91,7 +91,7 @@ const voiceRouter = router({
         // The transcription service runs server-side and needs an absolute URL.
         // Resolve the storage key to a signed (absolute) URL.
         const { storageGetSignedUrl } = await import("./storage");
-        const key = url.replace(/^\/manus-storage\//, "");
+        const key = storageKeyFromUrl(url);
         audioUrl = await storageGetSignedUrl(key);
       } catch (error) {
         throw new TRPCError({

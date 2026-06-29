@@ -8,4 +8,10 @@ export const ENV = {
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   elevenLabsApiKey: process.env.ELEVENLABS_API_KEY ?? "",
+  openAiApiKey: process.env.OPENAI_API_KEY ?? "",
+  openAiBaseUrl: process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1",
+  openAiChatModel: process.env.OPENAI_CHAT_MODEL ?? "gpt-4o-mini",
+  supabaseUrl: process.env.SUPABASE_URL ?? "",
+  supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
+  supabaseStorageBucket: process.env.SUPABASE_STORAGE_BUCKET ?? "onevox-audios",
 };
