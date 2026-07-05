@@ -1,14 +1,18 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { eq, sql } from "drizzle-orm";
 
 import { COOKIE_NAME } from "../shared/const.js";
+import { usageEvents, users } from "../drizzle/schema";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router } from "./_core/trpc";
+import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { transcribeAudio } from "./_core/voiceTranscription";
+import { getDb } from "./db";
 import { generateSpeech, getVoice, listVoices } from "./elevenlabs";
-import { interpretText } from "./interpret";
+import { interpretTextDetailed } from "./interpret";
 import { storageKeyFromUrl, storagePut } from "./storage";
+import { logUsage } from "./usage";
 
 // Default cloned voice (Roberto Dias). Can be overridden per request from the client.
 const DEFAULT_VOICE_ID = "GMafEIaeEWpGsrYrVqCX";
@@ -34,14 +38,31 @@ const voiceRouter = router({
         voiceId: z.string().min(1).optional(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const startedAt = Date.now();
+      const voiceId = input.voiceId || DEFAULT_VOICE_ID;
       try {
-        const { url, key } = await generateSpeech({
-          text: input.text,
-          voiceId: input.voiceId || DEFAULT_VOICE_ID,
+        const { url, key } = await generateSpeech({ text: input.text, voiceId });
+        // Contabiliza uso de TTS (ElevenLabs cobra por caractere) — best-effort.
+        void logUsage({
+          userId: ctx.user?.id ?? null,
+          provider: "elevenlabs",
+          operation: "tts",
+          characters: input.text.length,
+          latencyMs: Date.now() - startedAt,
+          detail: { voiceId },
         });
         return { url, key };
       } catch (error) {
+        void logUsage({
+          userId: ctx.user?.id ?? null,
+          provider: "elevenlabs",
+          operation: "tts",
+          characters: input.text.length,
+          latencyMs: Date.now() - startedAt,
+          success: false,
+          detail: { voiceId, error: error instanceof Error ? error.message : String(error) },
+        });
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: error instanceof Error ? error.message : "TTS failed",
@@ -52,10 +73,20 @@ const voiceRouter = router({
   // Interpret/rewrite raw text into a clean, speakable sentence.
   interpret: publicProcedure
     .input(z.object({ text: z.string().min(1).max(5000) }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const startedAt = Date.now();
       try {
-        const rewritten = await interpretText(input.text);
-        return { text: rewritten };
+        const { text, usage } = await interpretTextDetailed(input.text);
+        // Contabiliza uso de correcao (tokens OpenAI) por usuario — best-effort.
+        void logUsage({
+          userId: ctx.user?.id ?? null,
+          provider: "openai",
+          operation: "correcao",
+          tokensIn: usage?.tokensIn,
+          tokensOut: usage?.tokensOut,
+          latencyMs: Date.now() - startedAt,
+        });
+        return { text };
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -75,7 +106,7 @@ const voiceRouter = router({
         interpret: z.boolean().default(false),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       // 1. Persist the audio to storage so the transcription service can fetch it.
       let audioUrl: string;
       try {
@@ -101,6 +132,7 @@ const voiceRouter = router({
       }
 
       // 2. Transcribe.
+      const sttStart = Date.now();
       const result = await transcribeAudio({
         audioUrl,
         language: input.language ?? "pt",
@@ -110,13 +142,33 @@ const voiceRouter = router({
         throw new TRPCError({ code: "BAD_REQUEST", message: result.error });
       }
 
+      // Contabiliza uso de STT (minutos de audio) por usuario — best-effort.
+      void logUsage({
+        userId: ctx.user?.id ?? null,
+        provider: "openai",
+        operation: "stt",
+        audioSeconds: result.duration,
+        latencyMs: Date.now() - sttStart,
+        detail: { language: result.language },
+      });
+
       const original = result.text.trim();
 
       // 3. Optionally interpret/rewrite.
       let interpreted: string | null = null;
       if (input.interpret && original) {
         try {
-          interpreted = await interpretText(original);
+          const interpretStart = Date.now();
+          const r = await interpretTextDetailed(original);
+          interpreted = r.text;
+          void logUsage({
+            userId: ctx.user?.id ?? null,
+            provider: "openai",
+            operation: "correcao",
+            tokensIn: r.usage?.tokensIn,
+            tokensOut: r.usage?.tokensOut,
+            latencyMs: Date.now() - interpretStart,
+          });
         } catch {
           interpreted = null;
         }
@@ -129,6 +181,86 @@ const voiceRouter = router({
         duration: result.duration,
       };
     }),
+});
+
+// Consumo/custo por usuario. Leitura administrativa + o proprio usuario.
+const usageRouter = router({
+  // Resumo agregado de consumo e custo por usuario (somente admin).
+  summaryByUser: adminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) {
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Banco indisponivel" });
+    }
+    const rows = await db
+      .select({
+        userId: users.id,
+        name: users.name,
+        email: users.email,
+        calls: sql<number>`count(${usageEvents.id})`,
+        tokensIn: sql<number>`coalesce(sum(${usageEvents.tokensIn}), 0)`,
+        tokensOut: sql<number>`coalesce(sum(${usageEvents.tokensOut}), 0)`,
+        characters: sql<number>`coalesce(sum(${usageEvents.characters}), 0)`,
+        audioSeconds: sql<number>`coalesce(sum(${usageEvents.audioSeconds}), 0)`,
+        costUsd: sql<number>`coalesce(sum(${usageEvents.costUsd}), 0)`,
+      })
+      .from(usageEvents)
+      .leftJoin(users, eq(users.id, usageEvents.userId))
+      .groupBy(users.id, users.name, users.email);
+
+    return rows.map((r) => {
+      const audioSeconds = Number(r.audioSeconds) || 0;
+      return {
+        userId: r.userId,
+        name: r.name,
+        email: r.email,
+        calls: Number(r.calls) || 0,
+        tokensIn: Number(r.tokensIn) || 0,
+        tokensOut: Number(r.tokensOut) || 0,
+        characters: Number(r.characters) || 0,
+        audioSeconds,
+        audioMinutes: Math.round((audioSeconds / 60) * 100) / 100,
+        costUsd: Math.round((Number(r.costUsd) || 0) * 1e6) / 1e6,
+      };
+    });
+  }),
+
+  // Consumo do proprio usuario logado.
+  mine: protectedProcedure.query(async ({ ctx }) => {
+    const empty = {
+      calls: 0,
+      tokensIn: 0,
+      tokensOut: 0,
+      characters: 0,
+      audioSeconds: 0,
+      audioMinutes: 0,
+      costUsd: 0,
+    };
+    const db = await getDb();
+    if (!db) return empty;
+    const rows = await db
+      .select({
+        calls: sql<number>`count(${usageEvents.id})`,
+        tokensIn: sql<number>`coalesce(sum(${usageEvents.tokensIn}), 0)`,
+        tokensOut: sql<number>`coalesce(sum(${usageEvents.tokensOut}), 0)`,
+        characters: sql<number>`coalesce(sum(${usageEvents.characters}), 0)`,
+        audioSeconds: sql<number>`coalesce(sum(${usageEvents.audioSeconds}), 0)`,
+        costUsd: sql<number>`coalesce(sum(${usageEvents.costUsd}), 0)`,
+      })
+      .from(usageEvents)
+      .where(eq(usageEvents.userId, ctx.user.id));
+    const r = rows[0];
+    if (!r) return empty;
+    const audioSeconds = Number(r.audioSeconds) || 0;
+    return {
+      calls: Number(r.calls) || 0,
+      tokensIn: Number(r.tokensIn) || 0,
+      tokensOut: Number(r.tokensOut) || 0,
+      characters: Number(r.characters) || 0,
+      audioSeconds,
+      audioMinutes: Math.round((audioSeconds / 60) * 100) / 100,
+      costUsd: Math.round((Number(r.costUsd) || 0) * 1e6) / 1e6,
+    };
+  }),
 });
 
 export const appRouter = router({
@@ -146,6 +278,7 @@ export const appRouter = router({
   }),
 
   voice: voiceRouter,
+  usage: usageRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -40,9 +40,19 @@ Saída: "Por favor, chame o médico, estou com dor."`;
  * Rewrite/interpret a raw text (typed or transcribed) into a clean, speakable sentence
  * that faithfully reconstructs the user's intended message.
  */
-export async function interpretText(raw: string): Promise<string> {
+export type InterpretResult = {
+  text: string;
+  /** Token usage from the LLM call, for per-user usage/cost accounting. */
+  usage?: { tokensIn: number; tokensOut: number };
+};
+
+/**
+ * Same behaviour as interpretText, but also returns the LLM token usage.
+ * interpretText is kept as a thin wrapper so existing callers/tests are unaffected.
+ */
+export async function interpretTextDetailed(raw: string): Promise<InterpretResult> {
   const trimmed = raw.trim();
-  if (!trimmed) return "";
+  if (!trimmed) return { text: "" };
 
   const response = await invokeLLM({
     messages: [
@@ -60,5 +70,12 @@ export async function interpretText(raw: string): Promise<string> {
   const result = typeof content === "string" ? content.trim() : "";
   // Strip accidental wrapping quotes if the model added them.
   const cleaned = result.replace(/^["'“”]+|["'“”]+$/g, "").trim();
-  return cleaned || trimmed;
+  const usage = response?.usage
+    ? { tokensIn: response.usage.prompt_tokens, tokensOut: response.usage.completion_tokens }
+    : undefined;
+  return { text: cleaned || trimmed, usage };
+}
+
+export async function interpretText(raw: string): Promise<string> {
+  return (await interpretTextDetailed(raw)).text;
 }
