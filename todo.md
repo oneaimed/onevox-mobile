@@ -1,5 +1,16 @@
 # OneVox Mobile — TODO
 
+## Migração para Supabase serverless (em andamento — branch feat/migracao-supabase-serverless)
+Alvo: Vercel serverless + Supabase (Auth + Postgres + Storage). Dropar Railway, Manus e MySQL.
+- [x] Etapa 1 — fundação Supabase (clientes front/back, schema perfis/uso, .env.example)
+- [x] Etapa 2a — auth frontend (tela de login + portão)
+- [x] Proteger `.env` no .gitignore
+- [ ] Setup Supabase (você): ligar Auth email/senha + rodar `supabase/migrations/0001_init.sql` + criar contas com `elevenlabs_voice_id` + chaves no `.env`/Vercel
+- [ ] `pnpm install` (sincronizar pnpm-lock após incluir @supabase/supabase-js)
+- [ ] Etapa 2b — backend valida token Supabase (ctx.user) + logout no Perfil + voice_id do perfil
+- [ ] Etapa 3 — medição de uso → Supabase Postgres (aposentar versão MySQL)
+- [ ] Etapa 4 — host serverless na Vercel + remover Manus, MySQL/Drizzle e Railway
+
 ## Base / Design System
 - [x] Configurar tema (cores OneAI: fundo escuro, gradiente verde/ciano) em theme.config.js
 - [x] Criar componente de gradiente reutilizável (GradientButton / GradientBorder / GradientText)
