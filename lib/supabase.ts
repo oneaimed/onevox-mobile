@@ -13,11 +13,26 @@ if (!url || !anon) {
   console.warn("[Supabase] EXPO_PUBLIC_SUPABASE_URL / _ANON_KEY ausentes - usando placeholder");
 }
 
-export const supabase = createClient(url || "https://placeholder.supabase.co", anon || "public-anon-placeholder", {
-  auth: {
-    storage: AsyncStorage,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
+// No build (static render do Expo) nao existe `window`: o AsyncStorage-web usa
+// window.localStorage e quebraria ao instanciar o GoTrue. So habilita storage/
+// persistencia no browser (runtime); no build usa um client leve e descartavel.
+const isBrowser = typeof window !== "undefined";
+
+export const supabase = createClient(
+  url || "https://placeholder.supabase.co",
+  anon || "public-anon-placeholder",
+  {
+    auth: isBrowser
+      ? {
+          storage: AsyncStorage,
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: false,
+        }
+      : {
+          autoRefreshToken: false,
+          persistSession: false,
+          detectSessionInUrl: false,
+        },
   },
-});
+);
