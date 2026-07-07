@@ -12,7 +12,9 @@ Alvo: Vercel serverless + Supabase (Auth + Postgres + Storage). Dropar Railway, 
 - [x] Etapa 2b — backend valida token Supabase (ctx.user + voice_id do perfil), rotas de voz/IA agora exigem sessão, logout no Perfil, front envia token Supabase (código; falta build/teste)
 - [x] Etapa 3 — medição de uso → Supabase Postgres `uso` (aposentada a versão MySQL/Drizzle no fluxo)
 - [ ] Build/teste ponta a ponta local (`pnpm install` → `pnpm check` → `pnpm dev`): login, falar, medição gravando em `uso`
-- [ ] Etapa 4 — host serverless na Vercel + remover código morto do Manus, MySQL/Drizzle e Railway
+- [x] Etapa 4 (código) — app Express extraído p/ `server/app.ts`; função serverless `api/[...path].ts` serve todo o /api (tRPC + storage + health); rotas OAuth Manus removidas do app
+- [ ] Deploy: (1) `pnpm install` + commitar `pnpm-lock.yaml`; (2) setar env vars na Vercel (Prod+Preview) e esvaziar `EXPO_PUBLIC_API_BASE_URL`; (3) push da branch p/ preview; (4) validar preview; (5) merge/deploy em produção
+- [ ] Limpeza pós-deploy — apagar código morto Manus (oauth.ts/sdk.ts/manus-runtime/constants oauth) + MySQL/Drizzle (db.ts/schema/drizzle-kit/mysql2) e desligar Railway
 
 ## Base / Design System
 - [x] Configurar tema (cores OneAI: fundo escuro, gradiente verde/ciano) em theme.config.js
