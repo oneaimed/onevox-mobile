@@ -11,9 +11,14 @@ frontend Vercel, servidor Railway).
 independente **Vercel serverless + Supabase (Auth + Postgres + Storage)**, dropando
 Railway, Manus e MySQL. Foco: simplicidade, entrega, escalar sem fricao, seguranca.
 
-Progresso da migracao (branch, local, sem push, NAO testado):
+Progresso da migracao (branch, local, sem push):
 - Etapa 1 (fundacao Supabase): clientes front/back, schema `perfis`+`uso`, `.env.example`.
 - Etapa 2a (auth frontend): `useAuth` (Supabase), tela de login, portao no `_layout`.
+- Supabase provisionado e validado (2026-07-07): Auth email/senha ON, `perfis`+`uso`+RLS.
+- Etapa 2b/3 (auth backend + medicao) FEITAS em codigo (falta build/teste): backend valida
+  token Supabase (`server/_core/auth-supabase.ts` -> `ctx.user` uuid+voice_id+role),
+  rotas de voz/IA agora sao `protectedProcedure`, voz derivada do perfil (nunca do payload),
+  medicao grava/le do Supabase `uso`, front (`lib/trpc.ts`) manda o token, logout no Perfil.
 
 ## Ultima sessao — 2026-07-06
 
@@ -21,9 +26,11 @@ Progresso da migracao (branch, local, sem push, NAO testado):
   medicao de uso por usuario ja existia na `main` em MySQL (commit 3a93a72) e sera
   refeita em Postgres. `.gitignore` endurecido pra proteger `.env`.
 - Decisoes: Vercel serverless + Supabase, sem Railway/Manus/MySQL (ver tabela).
-- Parou em: aguardando config do Supabase (auth email/senha + chaves no env + contas
-  com `voice_id`) pra testar o login; proxima etapa de codigo e a 2b (backend aceitar
-  token Supabase). Segredos vao num `.env` local (gitignored), NUNCA no chat/commit.
+- Parou em: Etapas 2b+3 escritas (auth backend Supabase + medicao em `uso`). Ainda NAO
+  buildadas/testadas (sem `node_modules` no ambiente Claude). Proximo: `pnpm install` ->
+  `pnpm check` (tsc) -> criar conta de teste com `voice_id` -> `pnpm dev` e validar login,
+  fala e gravacao em `uso`. Depois Etapa 4 (serverless Vercel + remover codigo morto Manus/
+  MySQL). Segredos so no `.env` (gitignored), NUNCA no chat/commit.
 
 ## Decisoes tecnicas
 

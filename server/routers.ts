@@ -1,37 +1,36 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { eq, sql } from "drizzle-orm";
 
 import { COOKIE_NAME } from "../shared/const.js";
-import { usageEvents, users } from "../drizzle/schema";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { transcribeAudio } from "./_core/voiceTranscription";
-import { getDb } from "./db";
+import { getSupabaseAdmin } from "./supabase";
 import { generateSpeech, getVoice, listVoices } from "./elevenlabs";
 import { interpretTextDetailed } from "./interpret";
 import { storageKeyFromUrl, storagePut } from "./storage";
 import { logUsage } from "./usage";
 
-// Default cloned voice (Roberto Dias). Can be overridden per request from the client.
+// Voz clonada padrao (Roberto Dias). Usada como fallback quando o perfil do
+// usuario ainda nao tem elevenlabs_voice_id definido.
 const DEFAULT_VOICE_ID = "GMafEIaeEWpGsrYrVqCX";
 
 const voiceRouter = router({
   // List voices available on the ElevenLabs account.
-  listVoices: publicProcedure.query(async () => {
+  listVoices: protectedProcedure.query(async () => {
     return listVoices();
   }),
 
   // Confirm a specific voice exists / is usable.
-  getVoice: publicProcedure
+  getVoice: protectedProcedure
     .input(z.object({ voiceId: z.string().min(1) }))
     .query(async ({ input }) => {
       return getVoice(input.voiceId);
     }),
 
   // Text -> speech (cloned voice). Returns a storage url with the mp3.
-  generateSpeech: publicProcedure
+  generateSpeech: protectedProcedure
     .input(
       z.object({
         text: z.string().min(1).max(5000),
@@ -40,7 +39,9 @@ const voiceRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const startedAt = Date.now();
-      const voiceId = input.voiceId || DEFAULT_VOICE_ID;
+      // Regra de seguranca: a voz e sempre derivada do perfil do usuario logado,
+      // nunca do payload do cliente. `input.voiceId` fica so por compat do client.
+      const voiceId = ctx.user?.voiceId || DEFAULT_VOICE_ID;
       try {
         const { url, key } = await generateSpeech({ text: input.text, voiceId });
         // Contabiliza uso de TTS (ElevenLabs cobra por caractere) — best-effort.
@@ -71,7 +72,7 @@ const voiceRouter = router({
     }),
 
   // Interpret/rewrite raw text into a clean, speakable sentence.
-  interpret: publicProcedure
+  interpret: protectedProcedure
     .input(z.object({ text: z.string().min(1).max(5000) }))
     .mutation(async ({ input, ctx }) => {
       const startedAt = Date.now();
@@ -97,7 +98,7 @@ const voiceRouter = router({
 
   // Upload a recorded audio (base64) and transcribe it.
   // Optionally interpret/rewrite the transcription in the same call.
-  uploadAndTranscribe: publicProcedure
+  uploadAndTranscribe: protectedProcedure
     .input(
       z.object({
         audioBase64: z.string().min(1),
@@ -183,83 +184,97 @@ const voiceRouter = router({
     }),
 });
 
-// Consumo/custo por usuario. Leitura administrativa + o proprio usuario.
+// Consumo/custo por usuario, lido do Supabase (`uso`). Agregacao em JS (volumes
+// de POC). Leitura administrativa (todos os usuarios) + o proprio usuario.
+type UsoRow = {
+  user_id?: string;
+  tokens_in: number | null;
+  tokens_out: number | null;
+  caracteres: number | null;
+  segundos_audio: number | null;
+  custo_usd: number | null;
+};
+
+type Agg = {
+  calls: number;
+  tokensIn: number;
+  tokensOut: number;
+  characters: number;
+  audioSeconds: number;
+  costUsd: number;
+};
+
+function emptyAgg(): Agg {
+  return { calls: 0, tokensIn: 0, tokensOut: 0, characters: 0, audioSeconds: 0, costUsd: 0 };
+}
+
+function accumulate(agg: Agg, r: UsoRow): void {
+  agg.calls += 1;
+  agg.tokensIn += Number(r.tokens_in) || 0;
+  agg.tokensOut += Number(r.tokens_out) || 0;
+  agg.characters += Number(r.caracteres) || 0;
+  agg.audioSeconds += Number(r.segundos_audio) || 0;
+  agg.costUsd += Number(r.custo_usd) || 0;
+}
+
+function finalize(agg: Agg) {
+  return {
+    calls: agg.calls,
+    tokensIn: agg.tokensIn,
+    tokensOut: agg.tokensOut,
+    characters: agg.characters,
+    audioSeconds: agg.audioSeconds,
+    audioMinutes: Math.round((agg.audioSeconds / 60) * 100) / 100,
+    costUsd: Math.round(agg.costUsd * 1e6) / 1e6,
+  };
+}
+
 const usageRouter = router({
   // Resumo agregado de consumo e custo por usuario (somente admin).
   summaryByUser: adminProcedure.query(async () => {
-    const db = await getDb();
-    if (!db) {
-      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Banco indisponivel" });
+    const admin = getSupabaseAdmin();
+    if (!admin) {
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Supabase indisponivel" });
     }
-    const rows = await db
-      .select({
-        userId: users.id,
-        name: users.name,
-        email: users.email,
-        calls: sql<number>`count(${usageEvents.id})`,
-        tokensIn: sql<number>`coalesce(sum(${usageEvents.tokensIn}), 0)`,
-        tokensOut: sql<number>`coalesce(sum(${usageEvents.tokensOut}), 0)`,
-        characters: sql<number>`coalesce(sum(${usageEvents.characters}), 0)`,
-        audioSeconds: sql<number>`coalesce(sum(${usageEvents.audioSeconds}), 0)`,
-        costUsd: sql<number>`coalesce(sum(${usageEvents.costUsd}), 0)`,
-      })
-      .from(usageEvents)
-      .leftJoin(users, eq(users.id, usageEvents.userId))
-      .groupBy(users.id, users.name, users.email);
+    const { data, error } = await admin
+      .from("uso")
+      .select("user_id, tokens_in, tokens_out, caracteres, segundos_audio, custo_usd");
+    if (error) {
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+    }
 
-    return rows.map((r) => {
-      const audioSeconds = Number(r.audioSeconds) || 0;
-      return {
-        userId: r.userId,
-        name: r.name,
-        email: r.email,
-        calls: Number(r.calls) || 0,
-        tokensIn: Number(r.tokensIn) || 0,
-        tokensOut: Number(r.tokensOut) || 0,
-        characters: Number(r.characters) || 0,
-        audioSeconds,
-        audioMinutes: Math.round((audioSeconds / 60) * 100) / 100,
-        costUsd: Math.round((Number(r.costUsd) || 0) * 1e6) / 1e6,
-      };
-    });
+    const byUser = new Map<string, Agg>();
+    for (const row of (data ?? []) as UsoRow[]) {
+      const key = row.user_id ?? "";
+      const agg = byUser.get(key) ?? emptyAgg();
+      accumulate(agg, row);
+      byUser.set(key, agg);
+    }
+
+    const { data: perfis } = await admin.from("perfis").select("id, nome");
+    const nameById = new Map<string, string | null>(
+      ((perfis ?? []) as { id: string; nome: string | null }[]).map((p) => [p.id, p.nome]),
+    );
+
+    return Array.from(byUser.entries()).map(([userId, agg]) => ({
+      userId,
+      name: nameById.get(userId) ?? null,
+      ...finalize(agg),
+    }));
   }),
 
   // Consumo do proprio usuario logado.
   mine: protectedProcedure.query(async ({ ctx }) => {
-    const empty = {
-      calls: 0,
-      tokensIn: 0,
-      tokensOut: 0,
-      characters: 0,
-      audioSeconds: 0,
-      audioMinutes: 0,
-      costUsd: 0,
-    };
-    const db = await getDb();
-    if (!db) return empty;
-    const rows = await db
-      .select({
-        calls: sql<number>`count(${usageEvents.id})`,
-        tokensIn: sql<number>`coalesce(sum(${usageEvents.tokensIn}), 0)`,
-        tokensOut: sql<number>`coalesce(sum(${usageEvents.tokensOut}), 0)`,
-        characters: sql<number>`coalesce(sum(${usageEvents.characters}), 0)`,
-        audioSeconds: sql<number>`coalesce(sum(${usageEvents.audioSeconds}), 0)`,
-        costUsd: sql<number>`coalesce(sum(${usageEvents.costUsd}), 0)`,
-      })
-      .from(usageEvents)
-      .where(eq(usageEvents.userId, ctx.user.id));
-    const r = rows[0];
-    if (!r) return empty;
-    const audioSeconds = Number(r.audioSeconds) || 0;
-    return {
-      calls: Number(r.calls) || 0,
-      tokensIn: Number(r.tokensIn) || 0,
-      tokensOut: Number(r.tokensOut) || 0,
-      characters: Number(r.characters) || 0,
-      audioSeconds,
-      audioMinutes: Math.round((audioSeconds / 60) * 100) / 100,
-      costUsd: Math.round((Number(r.costUsd) || 0) * 1e6) / 1e6,
-    };
+    const admin = getSupabaseAdmin();
+    if (!admin) return finalize(emptyAgg());
+    const { data, error } = await admin
+      .from("uso")
+      .select("tokens_in, tokens_out, caracteres, segundos_audio, custo_usd")
+      .eq("user_id", ctx.user.id);
+    if (error || !data) return finalize(emptyAgg());
+    const agg = emptyAgg();
+    for (const row of data as UsoRow[]) accumulate(agg, row);
+    return finalize(agg);
   }),
 });
 

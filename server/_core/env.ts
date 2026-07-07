@@ -14,4 +14,9 @@ export const ENV = {
   supabaseUrl: process.env.SUPABASE_URL ?? "",
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
   supabaseStorageBucket: process.env.SUPABASE_STORAGE_BUCKET ?? "onevox-audios",
+  // Emails com acesso admin (leitura do consumo agregado). Lista separada por virgula.
+  adminEmails: (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean),
 };

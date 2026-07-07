@@ -18,6 +18,7 @@ import { OneVoxWordmark } from "@/components/brand/brand-bits";
 import { useColors } from "@/hooks/use-colors";
 import { useSpeech } from "@/hooks/use-speech";
 import { useOneVox, type FontScale } from "@/lib/onevox-store";
+import { useAuth } from "@/lib/auth-context";
 import { trpc } from "@/lib/trpc";
 import { brandGradient } from "@/theme.config";
 
@@ -31,6 +32,7 @@ export default function PerfilScreen() {
   const colors = useColors();
   const { settings, updateSettings, history, clearHistory } = useOneVox();
   const { speak, state } = useSpeech();
+  const { signOut } = useAuth();
 
   const haptic = (style: Haptics.ImpactFeedbackStyle = Haptics.ImpactFeedbackStyle.Light) => {
     if (Platform.OS !== "web") Haptics.impactAsync(style);
@@ -39,6 +41,12 @@ export default function PerfilScreen() {
   const testVoice = () => {
     haptic(Haptics.ImpactFeedbackStyle.Medium);
     speak("Olá, esta é a minha voz no OneVox.", { record: null }).catch(() => {});
+  };
+
+  const handleLogout = () => {
+    haptic(Haptics.ImpactFeedbackStyle.Medium);
+    // O portao no _layout redireciona para /login quando a sessao cai.
+    signOut().catch(() => {});
   };
 
   return (
@@ -208,6 +216,14 @@ export default function PerfilScreen() {
             OneVox Mobile · versão 1.0.0{"\n"}Comunicação assistiva com voz clonada, powered by OneAI.
           </Text>
         </View>
+
+        <TouchableOpacity
+          onPress={handleLogout}
+          activeOpacity={0.8}
+          style={[styles.logoutBtn, { borderColor: colors.border }]}
+        >
+          <Text style={[styles.logoutText, { color: colors.error }]}>Sair da conta</Text>
+        </TouchableOpacity>
       </ScrollView>
     </ScreenContainer>
   );
@@ -287,4 +303,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   historyText: { flex: 1, fontSize: 14 },
+  logoutBtn: {
+    height: 52,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 4,
+  },
+  logoutText: { fontSize: 15, fontWeight: "700" },
 });
