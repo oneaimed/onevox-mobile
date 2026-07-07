@@ -26,11 +26,17 @@ Progresso da migracao (branch, local, sem push):
   medicao de uso por usuario ja existia na `main` em MySQL (commit 3a93a72) e sera
   refeita em Postgres. `.gitignore` endurecido pra proteger `.env`.
 - Decisoes: Vercel serverless + Supabase, sem Railway/Manus/MySQL (ver tabela).
-- Parou em: Etapas 2b+3 escritas (auth backend Supabase + medicao em `uso`). Ainda NAO
-  buildadas/testadas (sem `node_modules` no ambiente Claude). Proximo: `pnpm install` ->
-  `pnpm check` (tsc) -> criar conta de teste com `voice_id` -> `pnpm dev` e validar login,
-  fala e gravacao em `uso`. Depois Etapa 4 (serverless Vercel + remover codigo morto Manus/
-  MySQL). Segredos so no `.env` (gitignored), NUNCA no chat/commit.
+- Etapas 2b+3+4 escritas (auth backend Supabase, medicao em `uso`, host serverless).
+  Etapa 4: `server/app.ts` (app Express compartilhado, sem OAuth Manus), `api/[...path].ts`
+  (funcao serverless Vercel que serve todo o /api reusando o app), `index.ts` refatorado.
+- Parou em: codigo pronto, NAO buildado/deployado (sem node_modules no ambiente Claude).
+  Deploy depende de: (1) `pnpm install` + commit do `pnpm-lock.yaml` (Vercel usa
+  --frozen-lockfile e entrou @supabase/supabase-js); (2) env vars na Vercel (Prod+Preview)
+  + esvaziar `EXPO_PUBLIC_API_BASE_URL` (pra API ficar relativa /api same-origin);
+  (3) push da branch -> preview -> validar -> produção. Storage ja e Supabase (a funcao
+  serverless PRECISA servir /api/storage/* senao o audio nao toca). Manus runtime e inerte
+  em producao (so age no iframe de preview) — limpeza de codigo morto fica pra depois do deploy.
+  Segredos so no `.env`/painel Vercel, NUNCA no chat/commit.
 
 ## Decisoes tecnicas
 
