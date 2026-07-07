@@ -7,11 +7,13 @@ const url = process.env.EXPO_PUBLIC_SUPABASE_URL ?? "";
 const anon = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? "";
 
 if (!url || !anon) {
-  // Nao lanca: deixa o app subir; o login falha com mensagem clara se faltar config.
-  console.warn("[Supabase] EXPO_PUBLIC_SUPABASE_URL / _ANON_KEY ausentes");
+  // Nao lanca nem quebra o build: o static render do Expo executa este modulo
+  // em build time. Sem as EXPO_PUBLIC_* setadas, cai num placeholder so pra
+  // instanciar o client; em runtime (com as env na Vercel) usa os valores reais.
+  console.warn("[Supabase] EXPO_PUBLIC_SUPABASE_URL / _ANON_KEY ausentes - usando placeholder");
 }
 
-export const supabase = createClient(url, anon, {
+export const supabase = createClient(url || "https://placeholder.supabase.co", anon || "public-anon-placeholder", {
   auth: {
     storage: AsyncStorage,
     autoRefreshToken: true,
