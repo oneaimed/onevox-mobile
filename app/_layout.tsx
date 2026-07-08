@@ -68,7 +68,6 @@ function RootNavigator() {
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: APP_BACKGROUND } }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="login" />
-      <Stack.Screen name="oauth/callback" />
     </Stack>
   );
 }
