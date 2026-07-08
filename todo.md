@@ -1,20 +1,20 @@
 # OneVox Mobile — TODO
 
-## Migração para Supabase serverless (em andamento — branch feat/migracao-supabase-serverless)
-Alvo: Vercel serverless + Supabase (Auth + Postgres + Storage). Dropar Railway, Manus e MySQL.
-- [x] Etapa 1 — fundação Supabase (clientes front/back, schema perfis/uso, .env.example)
-- [x] Etapa 2a — auth frontend (tela de login + portão)
-- [x] Proteger `.env` no .gitignore
-- [x] Setup Supabase — Auth email/senha ligado, migration 0001 aplicada (perfis/uso + RLS), chaves no `.env` local; conexao validada (2026-07-07)
-- [ ] Criar conta(s) de teste com `elevenlabs_voice_id` (painel Auth) p/ testar login ponta a ponta
-- [ ] Configurar as mesmas chaves no painel da Vercel (produção)
-- [ ] `pnpm install` (sincronizar pnpm-lock após incluir @supabase/supabase-js)
-- [x] Etapa 2b — backend valida token Supabase (ctx.user + voice_id do perfil), rotas de voz/IA agora exigem sessão, logout no Perfil, front envia token Supabase (código; falta build/teste)
-- [x] Etapa 3 — medição de uso → Supabase Postgres `uso` (aposentada a versão MySQL/Drizzle no fluxo)
-- [ ] Build/teste ponta a ponta local (`pnpm install` → `pnpm check` → `pnpm dev`): login, falar, medição gravando em `uso`
-- [x] Etapa 4 (código) — app Express extraído p/ `server/app.ts`; função serverless `api/[...path].ts` serve todo o /api (tRPC + storage + health); rotas OAuth Manus removidas do app
-- [ ] Deploy: (1) `pnpm install` + commitar `pnpm-lock.yaml`; (2) setar env vars na Vercel (Prod+Preview) e esvaziar `EXPO_PUBLIC_API_BASE_URL`; (3) push da branch p/ preview; (4) validar preview; (5) merge/deploy em produção
-- [ ] Limpeza pós-deploy — apagar código morto Manus (oauth.ts/sdk.ts/manus-runtime/constants oauth) + MySQL/Drizzle (db.ts/schema/drizzle-kit/mysql2) e desligar Railway
+## Migração para Supabase serverless — CONCLUÍDA e EM PRODUÇÃO (2026-07-07)
+Stack: Vercel serverless (`api/index.ts` = Express de `server/app.ts`, rewrite `/api/(.*)`→`/api`) + Supabase (Auth + Postgres + Storage). Railway/Manus/MySQL fora do fluxo. Produção: **onevox-mobile-lac.vercel.app**.
+- [x] Auth Supabase (login + portão + backend valida token → `ctx.user` com voice_id/role)
+- [x] Rotas de voz/IA exigem sessão; voz derivada do perfil (nunca do payload)
+- [x] Medição de uso → Supabase `uso` (MySQL/Drizzle aposentado)
+- [x] Host serverless na Vercel (rewrite /api) + env vars (Prod) + validado (login + **falar OK**)
+- [x] Limpeza camada 1 — removido Manus backend (sdk/oauth) + MySQL/Drizzle (db/schema/config/deps)
+- [x] Limpeza camada 2 (parcial) — removidos use-auth/oauth-callback/api.ts órfãos
+- [x] Branch de migração apagada (só `main`)
+
+### Pendências
+- [ ] Você (painéis): deletar projeto Vercel antigo → renomear o nosso p/ domínio limpo (tirar `-lac`); desligar Railway; arquivar/apagar repos antigos (oneai05, cassianopb)
+- [ ] Clonar vozes no ElevenLabs e preencher `perfis.elevenlabs_voice_id` de cada usuário
+- [ ] Limpeza camada 3 (quando der pra rodar `pnpm check`): restos Manus acoplados a runtime — `lib/_core/auth.ts` (usado pelo onevox-store) + partes Manus de `constants/oauth.ts` + `manus-runtime` (safe-area do _layout)
+- [ ] (Futuro) Redesign visual do app (skill /redesign-app)
 
 ## Base / Design System
 - [x] Configurar tema (cores OneAI: fundo escuro, gradiente verde/ciano) em theme.config.js
