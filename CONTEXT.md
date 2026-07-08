@@ -3,22 +3,21 @@
 
 ## Estado atual
 
-App **Expo/React Native** (exportado como PWA) da One AI. A `main` esta funcional
-(auth Manus OAuth + backend tRPC/Express + MySQL/Drizzle + Supabase Storage; deploy
-frontend Vercel, servidor Railway).
+App **Expo/React Native** (exportado como PWA) da One AI, na stack
+**Vercel serverless + Supabase (Auth + Postgres + Storage)**. A migracao (que dropou
+Railway, Manus e MySQL do fluxo) foi concluida e **deployada em producao** (`main`) em
+2026-07-07. URL de producao: **onevox-mobile-lac.vercel.app** (o `onevox-mobile.vercel.app`
+SEM `-lac` e OUTRO projeto/app antigo do cassiano — ignorar).
 
-**Em andamento (branch `feat/migracao-supabase-serverless`):** migracao pra stack
-independente **Vercel serverless + Supabase (Auth + Postgres + Storage)**, dropando
-Railway, Manus e MySQL. Foco: simplicidade, entrega, escalar sem fricao, seguranca.
-
-Progresso da migracao (branch, local, sem push):
-- Etapa 1 (fundacao Supabase): clientes front/back, schema `perfis`+`uso`, `.env.example`.
-- Etapa 2a (auth frontend): `useAuth` (Supabase), tela de login, portao no `_layout`.
-- Supabase provisionado e validado (2026-07-07): Auth email/senha ON, `perfis`+`uso`+RLS.
-- Etapa 2b/3 (auth backend + medicao) FEITAS em codigo (falta build/teste): backend valida
-  token Supabase (`server/_core/auth-supabase.ts` -> `ctx.user` uuid+voice_id+role),
-  rotas de voz/IA agora sao `protectedProcedure`, voz derivada do perfil (nunca do payload),
-  medicao grava/le do Supabase `uso`, front (`lib/trpc.ts`) manda o token, logout no Perfil.
+Migracao concluida (etapas 1-4), no ar:
+- Auth: Supabase email/senha; portao no `_layout` (sem sessao -> /login); backend valida
+  o token via `server/_core/auth-supabase.ts` -> `ctx.user` (uuid + voice_id + role).
+- Rotas de voz/IA sao `protectedProcedure`; voz derivada do perfil (nunca do payload).
+- Medicao grava/le do Supabase `uso` (MySQL/Drizzle aposentado no fluxo).
+- Host: funcao serverless `api/index.ts` (Express compartilhado em `server/app.ts`),
+  roteada por rewrite `/api/(.*)` -> `/api` no `vercel.json`; frontend chama `/api` relativo.
+  (O catch-all de arquivo `api/[...path].ts` so casava 1 segmento na Vercel -> trocado.)
+- Validado em producao (2026-07-07): login OK; `/api/trpc` responde JSON; UNAUTHORIZED/RLS OK.
 
 ## Ultima sessao — 2026-07-06
 
@@ -29,14 +28,15 @@ Progresso da migracao (branch, local, sem push):
 - Etapas 2b+3+4 escritas (auth backend Supabase, medicao em `uso`, host serverless).
   Etapa 4: `server/app.ts` (app Express compartilhado, sem OAuth Manus), `api/[...path].ts`
   (funcao serverless Vercel que serve todo o /api reusando o app), `index.ts` refatorado.
-- Parou em: codigo pronto, NAO buildado/deployado (sem node_modules no ambiente Claude).
-  Deploy depende de: (1) `pnpm install` + commit do `pnpm-lock.yaml` (Vercel usa
-  --frozen-lockfile e entrou @supabase/supabase-js); (2) env vars na Vercel (Prod+Preview)
-  + esvaziar `EXPO_PUBLIC_API_BASE_URL` (pra API ficar relativa /api same-origin);
-  (3) push da branch -> preview -> validar -> produção. Storage ja e Supabase (a funcao
-  serverless PRECISA servir /api/storage/* senao o audio nao toca). Manus runtime e inerte
-  em producao (so age no iframe de preview) — limpeza de codigo morto fica pra depois do deploy.
-  Segredos so no `.env`/painel Vercel, NUNCA no chat/commit.
+- Parou em (2026-07-07): migracao no ar em producao; login validado. Contas de teste criadas
+  via admin API (Cassiano + Yasmin, perfis com voice_id=null -> fallback). FALTA: (1) confirmar
+  o "falar" ponta a ponta (precisa `OPENAI_API_KEY`+`ELEVENLABS_API_KEY` no escopo Production +
+  redeploy); (2) clonar as vozes no ElevenLabs e preencher `perfis.elevenlabs_voice_id`;
+  (3) limpeza de codigo morto (Manus: sdk/oauth/manus-runtime/constants oauth; MySQL: db.ts/
+  drizzle/schema/mysql2) e desligar o Railway. Notas de deploy: Vercel usa `pnpm install
+  --no-frozen-lockfile` (maquina institucional nao alcanca o registry npm p/ rodar local);
+  build quebrava no static render do Expo (createClient/AsyncStorage tocam window) -> guardado
+  em `lib/supabase.ts` (storage/persistSession so no browser). Segredos so no painel Vercel/`.env`.
 
 ## Decisoes tecnicas
 
