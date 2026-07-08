@@ -1,5 +1,6 @@
 {
   "buildCommand": "corepack enable && pnpm exec cross-env EXPO_USE_METRO_WORKSPACE_ROOT=1 expo export --platform web --output-dir web-dist",
   "outputDirectory": "web-dist",
-  "installCommand": "corepack enable && pnpm install --no-frozen-lockfile"
+  "installCommand": "corepack enable && pnpm install --no-frozen-lockfile",
+  "rewrites": [{ "source": "/api/(.*)", "destination": "/api" }]
 }
