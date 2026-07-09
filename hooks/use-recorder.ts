@@ -12,6 +12,8 @@ import * as FileSystem from "expo-file-system/legacy";
 export type RecorderResult = {
   base64: string;
   mimeType: string;
+  /** URI local do arquivo/blob gravado, para reproducao antes do upload. */
+  uri: string;
 };
 
 /**
@@ -72,7 +74,7 @@ export function useRecorder() {
       }
 
       if (!base64) return null;
-      return { base64, mimeType };
+      return { base64, mimeType, uri };
     } catch (e) {
       console.warn("[recorder] stop failed", e);
       return null;

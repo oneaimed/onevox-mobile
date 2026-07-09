@@ -11,6 +11,7 @@ import { generateSpeech, getVoice, listVoices } from "./elevenlabs";
 import { interpretTextDetailed } from "./interpret";
 import { storageGetSignedUrl, storageKeyFromUrl, storagePut } from "./storage";
 import { logUsage } from "./usage";
+import { trainingRouter } from "./training";
 
 // Voz clonada padrao (Roberto Dias). Usada como fallback quando o perfil do
 // usuario ainda nao tem elevenlabs_voice_id definido.
@@ -293,6 +294,7 @@ export const appRouter = router({
 
   voice: voiceRouter,
   usage: usageRouter,
+  training: trainingRouter,
 });
 
 export type AppRouter = typeof appRouter;
