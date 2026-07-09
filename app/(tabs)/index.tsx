@@ -18,6 +18,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Sharing from "expo-sharing";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -32,6 +33,7 @@ const FONT = BODY_FONT;
 
 export default function TecladoScreen() {
   const colors = useColors();
+  const insets = useSafeAreaInsets();
   const { settings, fontSizeFor } = useOneVox();
   const { speak, state, error, lastAudioUrl } = useSpeech();
   const [text, setText] = useState("");
@@ -105,8 +107,8 @@ export default function TecladoScreen() {
   const speakLabel = state === "generating" ? "Gerando..." : state === "playing" ? "Falando..." : "Falar";
 
   return (
-    <ScreenContainer className="px-5">
-      <View style={styles.header}>
+    <ScreenContainer className="px-5" edges={["left", "right"]}>
+      <View style={[styles.header, { paddingTop: Math.max(Math.round(insets.top * 0.35), 6) }]}>
         <OneVoxWordmark size={24} />
       </View>
 

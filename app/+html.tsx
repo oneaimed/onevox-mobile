@@ -59,6 +59,16 @@ body {
   margin: 0;
   overflow: hidden;
 }
+
+/*
+ * O react-native-web nao herda font-family no texto por padrao. Esta regra
+ * (especificidade de #id) forca Inter em tudo dentro do app, mas PERDE para
+ * estilos inline — entao a marca (Space Grotesk inline) e os icones
+ * (Material Icons inline) continuam com a fonte correta.
+ */
+#root * {
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
 `;
 
 export default function Root({ children }: PropsWithChildren) {

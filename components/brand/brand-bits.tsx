@@ -1,5 +1,5 @@
 import React from "react";
-import { Image, StyleSheet, Text, View, type ViewStyle, type TextStyle } from "react-native";
+import { Image, Platform, StyleSheet, Text, View, type ViewStyle, type TextStyle } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import MaskedView from "@react-native-masked-view/masked-view";
 
@@ -11,6 +11,42 @@ const ONEAI_SHIELD = require("@/assets/images/Logo OneAI só escudo.jpeg");
  * Wordmark "OneVox" — enxuto, uma linha. Passe subtitle so quando fizer sentido.
  */
 export function OneVoxWordmark({ size = 24, subtitle }: { size?: number; subtitle?: string }) {
+  // No web (alvo PWA) usamos elementos DOM reais: garante a fonte Space Grotesk
+  // e o degrade no "Vox" via background-clip (MaskedView nao funciona no web).
+  if (Platform.OS === "web") {
+    const base: Record<string, string | number> = {
+      fontFamily: `'${DISPLAY_FONT}', system-ui, sans-serif`,
+      fontWeight: 700,
+      fontSize: size,
+      letterSpacing: 0.3,
+      lineHeight: 1.05,
+    };
+    return (
+      <View style={styles.wordmarkWrap}>
+        {React.createElement(
+          "div",
+          { style: { display: "flex", alignItems: "baseline" } },
+          React.createElement("span", { style: { ...base, color: "#FFFFFF" } }, "One"),
+          React.createElement(
+            "span",
+            {
+              style: {
+                ...base,
+                backgroundImage: "linear-gradient(90deg,#5DE89B 0%,#34D8A0 45%,#3AAEE6 100%)",
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                color: "transparent",
+              },
+            },
+            "Vox",
+          ),
+        )}
+        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+      </View>
+    );
+  }
+
   return (
     <View style={styles.wordmarkWrap}>
       <View style={styles.row}>
