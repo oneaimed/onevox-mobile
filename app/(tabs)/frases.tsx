@@ -59,7 +59,7 @@ export default function FrasesScreen() {
   return (
     <ScreenContainer className="px-5">
       <View style={styles.header}>
-        <OneVoxWordmark size={26} subtitle="FRASES RÁPIDAS" />
+        <OneVoxWordmark size={24} subtitle="FRASES RÁPIDAS" />
       </View>
 
       {/* Categorias — 4 lado a lado, compactas */}
@@ -197,7 +197,7 @@ export default function FrasesScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { alignItems: "center", paddingTop: 8, paddingBottom: 10 },
+  header: { alignItems: "center", paddingTop: 4, paddingBottom: 8 },
   catRow: { flexDirection: "row", gap: 8, paddingVertical: 4 },
   catTab: {
     flex: 1,

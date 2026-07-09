@@ -24,7 +24,7 @@ import { AuthProvider, useAuth } from "@/lib/auth-context";
 const APP_BACKGROUND = "#0A1628";
 const DEFAULT_WEB_INSETS: EdgeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 const DEFAULT_WEB_FRAME: Rect = { x: 0, y: 0, width: 0, height: 0 };
-const MIN_WEB_TOP_INSET = 52;
+const MIN_WEB_TOP_INSET = 8;
 
 function normalizeInsets(insets: EdgeInsets): EdgeInsets {
   return {

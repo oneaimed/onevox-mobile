@@ -18,7 +18,6 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Sharing from "expo-sharing";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -33,7 +32,6 @@ const FONT = BODY_FONT;
 
 export default function TecladoScreen() {
   const colors = useColors();
-  const insets = useSafeAreaInsets();
   const { settings, fontSizeFor } = useOneVox();
   const { speak, state, error, lastAudioUrl } = useSpeech();
   const [text, setText] = useState("");
@@ -107,8 +105,8 @@ export default function TecladoScreen() {
   const speakLabel = state === "generating" ? "Gerando..." : state === "playing" ? "Falando..." : "Falar";
 
   return (
-    <ScreenContainer className="px-5" edges={["left", "right"]}>
-      <View style={[styles.header, { paddingTop: Math.max(Math.round(insets.top * 0.35), 6) }]}>
+    <ScreenContainer className="px-5">
+      <View style={styles.header}>
         <OneVoxWordmark size={24} />
       </View>
 
@@ -143,31 +141,11 @@ export default function TecladoScreen() {
 
         {error ? <Text style={[styles.error, { color: colors.error }]}>{error}</Text> : null}
 
-        {/* Sim / Nao — falam direto */}
-        <View style={styles.row}>
-          <QuickButton label="Sim" icon="checkmark" color={colors.success} onPress={() => handleQuick("Sim.")} disabled={busy} />
-          <QuickButton label="Não" icon="xmark" color={colors.error} onPress={() => handleQuick("Não.")} disabled={busy} />
-        </View>
-
-        {/* Limpar / Desfazer */}
-        <View style={styles.row}>
-          <QuickButton label="Limpar" icon="trash" color={colors.muted} onPress={handleClear} disabled={!text} outline />
-          <QuickButton
-            label="Desfazer"
-            icon="arrow.uturn.backward"
-            color={colors.muted}
-            onPress={handleUndo}
-            disabled={!!text || !lastCleared}
-            outline
-          />
-        </View>
-
-        {/* Falar — botao principal */}
+        {/* Falar — botao principal, logo apos o texto */}
         <TouchableOpacity
           onPress={handleSpeak}
           disabled={!text.trim() || busy}
           activeOpacity={0.85}
-          style={{ marginTop: 4 }}
         >
           <LinearGradient
             colors={brandGradient as [string, string, ...string[]]}
@@ -184,22 +162,35 @@ export default function TecladoScreen() {
           </LinearGradient>
         </TouchableOpacity>
 
-        {/* Corrigir e reescrever com IA */}
-        <TouchableOpacity
-          onPress={handleRewrite}
-          disabled={!text.trim() || busy}
-          activeOpacity={0.7}
-          style={[styles.rewriteBtn, { borderColor: colors.primary }, (!text.trim() || busy) && { opacity: 0.45 }]}
-        >
-          {interpreting ? (
-            <ActivityIndicator size="small" color={colors.primary} />
-          ) : (
-            <IconSymbol name="wand.and.stars" size={18} color={colors.primary} />
-          )}
-          <Text style={[styles.rewriteText, { color: colors.primary }]}>
-            {interpreting ? "Reescrevendo..." : "Corrigir e reescrever"}
-          </Text>
-        </TouchableOpacity>
+        {/* Corrigir / Limpar / Desfazer — acoes sobre o texto */}
+        <View style={styles.row}>
+          <QuickButton
+            label={interpreting ? "..." : "Corrigir"}
+            icon="wand.and.stars"
+            color={colors.primary}
+            onPress={handleRewrite}
+            disabled={!text.trim() || busy}
+            outline
+          />
+          <QuickButton label="Limpar" icon="trash" color={colors.muted} onPress={handleClear} disabled={!text} outline />
+          <QuickButton
+            label="Desfazer"
+            icon="arrow.uturn.backward"
+            color={colors.muted}
+            onPress={handleUndo}
+            disabled={!!text || !lastCleared}
+            outline
+          />
+        </View>
+
+        <View style={{ flex: 1 }} />
+
+        {/* Respostas rapidas — no rodape, desacopladas do texto digitado */}
+        <Text style={[styles.quickTitle, { color: colors.muted }]}>RESPOSTAS RÁPIDAS</Text>
+        <View style={styles.row}>
+          <QuickButton label="Sim" icon="checkmark" color={colors.success} onPress={() => handleQuick("Sim.")} disabled={busy} />
+          <QuickButton label="Não" icon="xmark" color={colors.error} onPress={() => handleQuick("Não.")} disabled={busy} />
+        </View>
       </ScrollView>
       <PoweredByOneAI />
       {lastAudioUrl ? <FloatingShareButton audioUrl={lastAudioUrl} /> : null}
@@ -411,6 +402,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
+  quickTitle: {
+    fontFamily: FONT,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1.5,
+    marginBottom: -4,
+  },
   speakBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -424,20 +422,6 @@ const styles = StyleSheet.create({
     color: "#0A1628",
     fontSize: 18,
     fontWeight: "700",
-  },
-  rewriteBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    height: 52,
-    borderRadius: 14,
-    borderWidth: 1.5,
-  },
-  rewriteText: {
-    fontFamily: FONT,
-    fontSize: 15,
-    fontWeight: "600",
   },
   shareFloatingWrap: {
     position: "absolute",

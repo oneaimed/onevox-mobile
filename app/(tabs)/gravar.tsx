@@ -99,7 +99,7 @@ export default function GravarScreen() {
   return (
     <ScreenContainer className="px-5">
       <View style={styles.header}>
-        <OneVoxWordmark size={26} subtitle="GRAVE E DEIXE A IA INTERPRETAR" />
+        <OneVoxWordmark size={24} subtitle="GRAVE E DEIXE A IA INTERPRETAR" />
       </View>
 
       <ScrollView
@@ -260,7 +260,7 @@ export default function GravarScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { alignItems: "center", paddingTop: 8, paddingBottom: 16 },
+  header: { alignItems: "center", paddingTop: 4, paddingBottom: 10 },
   errorBox: {
     flexDirection: "row",
     alignItems: "center",

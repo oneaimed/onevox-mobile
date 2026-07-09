@@ -52,7 +52,7 @@ export default function PerfilScreen() {
   return (
     <ScreenContainer className="px-5">
       <View style={styles.header}>
-        <OneVoxWordmark size={26} subtitle="PERFIL E AJUSTES" />
+        <OneVoxWordmark size={24} subtitle="PERFIL E AJUSTES" />
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 20, gap: 18 }} showsVerticalScrollIndicator={false}>
@@ -230,7 +230,7 @@ export default function PerfilScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { alignItems: "center", paddingTop: 8, paddingBottom: 12 },
+  header: { alignItems: "center", paddingTop: 4, paddingBottom: 8 },
   voiceBorder: { borderRadius: 22, padding: 2 },
   voiceInner: { borderRadius: 20, padding: 18 },
   voiceTop: { flexDirection: "row", alignItems: "center", gap: 14 },
