@@ -48,6 +48,7 @@ body,
 #root {
   background: #0A1628;
   min-height: 100%;
+  font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
 html {
@@ -76,6 +77,12 @@ export default function Root({ children }: PropsWithChildren) {
         <meta
           name="description"
           content="OneVox Mobile: comunicacao assistiva com voz clonada."
+        />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
         />
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" type="image/png" sizes="196x196" href="/favicon.png" />
