@@ -3,11 +3,9 @@ import {
   ActivityIndicator,
   Animated,
   Dimensions,
-  Image,
   Keyboard,
   PanResponder,
   Platform,
-  Pressable,
   ScrollView,
   Share,
   StyleSheet,
@@ -30,7 +28,7 @@ import { useOneVox } from "@/lib/onevox-store";
 import { trpc } from "@/lib/trpc";
 import { brandGradient } from "@/theme.config";
 
-const ONEAI_LOGO = require("@/assets/images/Logo enquadrado.jpeg");
+const FONT = "Poppins";
 
 export default function TecladoScreen() {
   const colors = useColors();
@@ -103,131 +101,55 @@ export default function TecladoScreen() {
   };
 
   const busy = state !== "idle" || interpreting;
-  const inputFontSize = fontSizeFor(22);
+  const inputFontSize = fontSizeFor(18);
+  const speakLabel = state === "generating" ? "Gerando..." : state === "playing" ? "Falando..." : "Falar";
 
   return (
     <ScreenContainer className="px-5">
-      {/* Header */}
       <View style={styles.header}>
         <OneVoxWordmark size={26} subtitle="COMUNICAÇÃO COM SUA VOZ" />
       </View>
 
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 16 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 16, gap: 12 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Text area with gradient border */}
-        <LinearGradient
-          colors={brandGradient as [string, string, ...string[]]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.inputBorder}
-        >
-          <View style={[styles.inputInner, { backgroundColor: colors.surface }]}>
-            <TextInput
-              value={text}
-              onChangeText={setText}
-              placeholder="Escreva sua mensagem aqui..."
-              placeholderTextColor={colors.muted}
-              multiline
-              style={[
-                styles.input,
-                { color: colors.foreground, fontSize: inputFontSize, lineHeight: inputFontSize * 1.35 },
-              ]}
-              textAlignVertical="top"
-            />
-            {text.length > 0 && (
-              <Text style={[styles.counter, { color: colors.muted }]}>{text.length} caracteres</Text>
-            )}
-          </View>
-        </LinearGradient>
-
-        {/* Rewrite with AI */}
-        <TouchableOpacity
-          onPress={handleRewrite}
-          disabled={!text.trim() || busy}
+        {/* Area de texto */}
+        <View
           style={[
-            styles.rewriteBtn,
-            { borderColor: colors.border, backgroundColor: colors.surface },
-            (!text.trim() || busy) && { opacity: 0.45 },
+            styles.inputCard,
+            { backgroundColor: colors.surface, borderColor: error ? colors.error : colors.border },
           ]}
-          activeOpacity={0.7}
         >
-          {interpreting ? (
-            <ActivityIndicator size="small" color={colors.primary} />
-          ) : (
-            <IconSymbol name="wand.and.stars" size={20} color={colors.primary} />
+          <TextInput
+            value={text}
+            onChangeText={setText}
+            placeholder="Escreva sua mensagem aqui..."
+            placeholderTextColor={colors.muted}
+            multiline
+            style={[
+              styles.input,
+              { color: colors.foreground, fontSize: inputFontSize, lineHeight: inputFontSize * 1.4 },
+            ]}
+            textAlignVertical="top"
+          />
+          {text.length > 0 && (
+            <Text style={[styles.counter, { color: colors.muted }]}>{text.length} caracteres</Text>
           )}
-          <Text style={[styles.rewriteText, { color: colors.foreground }]}>
-            {interpreting ? "Reescrevendo..." : "Corrigir e reescrever com IA"}
-          </Text>
-        </TouchableOpacity>
+        </View>
 
         {error ? <Text style={[styles.error, { color: colors.error }]}>{error}</Text> : null}
 
-        {/* One AI speak button */}
-        <View style={styles.speakWrap}>
-          <Pressable
-            onPress={handleSpeak}
-            disabled={!text.trim() || busy}
-            style={({ pressed }) => [
-              styles.speakOuter,
-              (!text.trim() || busy) && { opacity: 0.5 },
-              pressed && { transform: [{ scale: 0.97 }] },
-            ]}
-          >
-            <LinearGradient
-              colors={brandGradient as [string, string, ...string[]]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.speakRing}
-            >
-              <View style={[styles.speakLogoInner, { backgroundColor: colors.background }]}>
-                <Image source={ONEAI_LOGO} style={styles.speakLogo} resizeMode="cover" />
-                {state === "generating" ? (
-                  <View style={styles.speakLoadingOverlay}>
-                    <ActivityIndicator color={colors.primary} size="large" />
-                  </View>
-                ) : null}
-              </View>
-            </LinearGradient>
-          </Pressable>
-          <Text style={[styles.speakLabel, { color: colors.muted }]}>
-            {state === "generating"
-              ? "Gerando áudio..."
-              : state === "playing"
-                ? "Falando..."
-                : "Toque para falar com a voz clonada"}
-          </Text>
+        {/* Sim / Nao — falam direto */}
+        <View style={styles.row}>
+          <QuickButton label="Sim" icon="checkmark" color={colors.success} onPress={() => handleQuick("Sim.")} disabled={busy} />
+          <QuickButton label="Não" icon="xmark" color={colors.error} onPress={() => handleQuick("Não.")} disabled={busy} />
         </View>
 
-        {/* Quick actions */}
-        <View style={styles.quickRow}>
-          <QuickButton
-            label="Sim"
-            icon="checkmark"
-            color={colors.success}
-            onPress={() => handleQuick("Sim.")}
-            disabled={busy}
-          />
-          <QuickButton
-            label="Não"
-            icon="xmark"
-            color={colors.error}
-            onPress={() => handleQuick("Não.")}
-            disabled={busy}
-          />
-        </View>
-        <View style={styles.quickRow}>
-          <QuickButton
-            label="Limpar"
-            icon="trash"
-            color={colors.muted}
-            onPress={handleClear}
-            disabled={!text}
-            outline
-          />
+        {/* Limpar / Desfazer */}
+        <View style={styles.row}>
+          <QuickButton label="Limpar" icon="trash" color={colors.muted} onPress={handleClear} disabled={!text} outline />
           <QuickButton
             label="Desfazer"
             icon="arrow.uturn.backward"
@@ -237,6 +159,45 @@ export default function TecladoScreen() {
             outline
           />
         </View>
+
+        {/* Falar — botao principal */}
+        <TouchableOpacity
+          onPress={handleSpeak}
+          disabled={!text.trim() || busy}
+          activeOpacity={0.85}
+          style={{ marginTop: 4 }}
+        >
+          <LinearGradient
+            colors={brandGradient as [string, string, ...string[]]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[styles.speakBtn, (!text.trim() || busy) && { opacity: 0.5 }]}
+          >
+            {state === "generating" ? (
+              <ActivityIndicator color="#0A1628" size="small" />
+            ) : (
+              <IconSymbol name="speaker.wave.2.fill" size={24} color="#0A1628" />
+            )}
+            <Text style={styles.speakBtnText}>{speakLabel}</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+
+        {/* Corrigir e reescrever com IA */}
+        <TouchableOpacity
+          onPress={handleRewrite}
+          disabled={!text.trim() || busy}
+          activeOpacity={0.7}
+          style={[styles.rewriteBtn, { borderColor: colors.primary }, (!text.trim() || busy) && { opacity: 0.45 }]}
+        >
+          {interpreting ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <IconSymbol name="wand.and.stars" size={18} color={colors.primary} />
+          )}
+          <Text style={[styles.rewriteText, { color: colors.primary }]}>
+            {interpreting ? "Reescrevendo..." : "Corrigir e reescrever"}
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
       {lastAudioUrl ? <FloatingShareButton audioUrl={lastAudioUrl} /> : null}
     </ScreenContainer>
@@ -394,7 +355,7 @@ function QuickButton({
         disabled && { opacity: 0.4 },
       ]}
     >
-      <IconSymbol name={icon} size={22} color={color} />
+      <IconSymbol name={icon} size={20} color={color} />
       <Text style={[styles.quickLabel, { color: colors.foreground }]}>{label}</Text>
     </TouchableOpacity>
   );
@@ -404,96 +365,34 @@ const styles = StyleSheet.create({
   header: {
     alignItems: "center",
     paddingTop: 8,
-    paddingBottom: 16,
+    paddingBottom: 12,
   },
-  inputBorder: {
-    borderRadius: 22,
-    padding: 2,
-    minHeight: 180,
-  },
-  inputInner: {
-    borderRadius: 20,
-    padding: 18,
-    minHeight: 176,
+  inputCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    minHeight: 150,
   },
   input: {
     flex: 1,
-    fontWeight: "600",
-    minHeight: 130,
+    fontFamily: FONT,
+    fontWeight: "500",
+    minHeight: 120,
   },
   counter: {
+    fontFamily: FONT,
     fontSize: 12,
     textAlign: "right",
     marginTop: 6,
   },
-  rewriteBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    marginTop: 14,
-    paddingVertical: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-  },
-  rewriteText: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
   error: {
+    fontFamily: FONT,
     textAlign: "center",
-    marginTop: 12,
     fontSize: 13,
   },
-  speakWrap: {
-    alignItems: "center",
-    marginTop: 24,
-    marginBottom: 8,
-  },
-  speakOuter: {
-    borderRadius: 100,
-    shadowColor: "#34D8A0",
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 10,
-  },
-  speakRing: {
-    width: 142,
-    height: 142,
-    borderRadius: 100,
-    padding: 5,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  speakLogoInner: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 100,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  speakLogo: {
-    width: "104%",
-    height: "104%",
-    borderRadius: 100,
-  },
-  speakLoadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(10, 22, 40, 0.72)",
-  },
-  speakLabel: {
-    marginTop: 14,
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  quickRow: {
+  row: {
     flexDirection: "row",
     gap: 12,
-    marginTop: 12,
   },
   quickBtn: {
     flex: 1,
@@ -501,12 +400,41 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    height: 58,
+    height: 54,
     borderRadius: 14,
   },
   quickLabel: {
+    fontFamily: FONT,
     fontSize: 16,
     fontWeight: "700",
+  },
+  speakBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    height: 62,
+    borderRadius: 16,
+  },
+  speakBtnText: {
+    fontFamily: FONT,
+    color: "#0A1628",
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  rewriteBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    height: 52,
+    borderRadius: 14,
+    borderWidth: 1.5,
+  },
+  rewriteText: {
+    fontFamily: FONT,
+    fontSize: 15,
+    fontWeight: "600",
   },
   shareFloatingWrap: {
     position: "absolute",
