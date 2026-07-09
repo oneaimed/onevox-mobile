@@ -22,7 +22,7 @@ import { useOneVox } from "@/lib/onevox-store";
 import { trpc } from "@/lib/trpc";
 import { brandGradient } from "@/theme.config";
 
-type RecPhase = "idle" | "recording" | "review" | "saving";
+type RecPhase = "idle" | "preparing" | "recording" | "review" | "saving";
 type Take = RecorderResult & { durationMs: number };
 
 const PLAYBACK_MODE = { playsInSilentMode: true, allowsRecording: false };
@@ -140,9 +140,16 @@ export default function TreinoScreen() {
     stopPlayback();
     setTake(null);
     haptic();
+    // Feedback instantaneo: muda a UI no mesmo instante do toque, enquanto o
+    // microfone do aparelho "esquenta" (permissao + prepare + record levam um tempo).
+    setRecPhase("preparing");
     const ok = await recorder.start();
-    if (ok) setRecPhase("recording");
-    else setErrorMsg("Não foi possível acessar o microfone. Verifique as permissões.");
+    if (ok) {
+      setRecPhase("recording");
+    } else {
+      setRecPhase("idle");
+      setErrorMsg("Não foi possível acessar o microfone. Verifique as permissões.");
+    }
   };
 
   const handleStopRec = async () => {
@@ -438,7 +445,7 @@ export default function TreinoScreen() {
         </View>
 
         {/* Controles conforme a fase */}
-        {(recPhase === "idle" || recPhase === "recording") && (
+        {(recPhase === "idle" || recPhase === "preparing" || recPhase === "recording") && (
           <View style={styles.centerArea}>
             {recPhase === "recording" && (
               <View style={styles.timerWrap}>
@@ -449,7 +456,14 @@ export default function TreinoScreen() {
               </View>
             )}
             <Pressable
-              onPress={recPhase === "recording" ? handleStopRec : handleStartRec}
+              onPress={
+                recPhase === "recording"
+                  ? handleStopRec
+                  : recPhase === "idle"
+                    ? handleStartRec
+                    : undefined
+              }
+              disabled={recPhase === "preparing"}
               style={({ pressed }) => [styles.micOuter, pressed && { transform: [{ scale: 0.97 }] }]}
             >
               <LinearGradient
@@ -462,15 +476,23 @@ export default function TreinoScreen() {
                 end={{ x: 1, y: 1 }}
                 style={styles.micBtn}
               >
-                <IconSymbol
-                  name={recPhase === "recording" ? "stop.fill" : "mic.fill"}
-                  size={48}
-                  color="#0A1628"
-                />
+                {recPhase === "preparing" ? (
+                  <ActivityIndicator size="large" color="#0A1628" />
+                ) : (
+                  <IconSymbol
+                    name={recPhase === "recording" ? "stop.fill" : "mic.fill"}
+                    size={48}
+                    color="#0A1628"
+                  />
+                )}
               </LinearGradient>
             </Pressable>
             <Text style={[styles.micLabel, { color: colors.muted }]}>
-              {recPhase === "recording" ? "Toque para parar" : "Toque para gravar"}
+              {recPhase === "recording"
+                ? "Toque para parar"
+                : recPhase === "preparing"
+                  ? "Preparando o microfone..."
+                  : "Toque para gravar"}
             </Text>
             {recPhase === "idle" && total > 1 ? (
               <TouchableOpacity onPress={handleSkip} activeOpacity={0.7} style={styles.skipBtn}>
