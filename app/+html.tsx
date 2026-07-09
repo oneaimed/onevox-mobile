@@ -12,15 +12,12 @@ if ("serviceWorker" in navigator) {
 
   window.addEventListener("load", function () {
     navigator.serviceWorker
-      .register("/service-worker.js")
+      .register("/service-worker.js", { updateViaCache: "none" })
       .then(function (registration) {
-        function activateWaitingWorker() {
-          if (registration.waiting) {
-            registration.waiting.postMessage({ type: "SKIP_WAITING" });
-          }
+        // Ativa imediatamente um worker novo que ja esteja esperando.
+        if (registration.waiting) {
+          registration.waiting.postMessage({ type: "SKIP_WAITING" });
         }
-
-        activateWaitingWorker();
         registration.addEventListener("updatefound", function () {
           var worker = registration.installing;
           if (!worker) return;
@@ -30,7 +27,13 @@ if ("serviceWorker" in navigator) {
             }
           });
         });
-        registration.update().catch(function () {});
+        // Checa atualizacao ao abrir e toda vez que o app volta pro foco
+        // (reabrir a PWA) — se houver versao nova, ativa e recarrega sozinho.
+        var checkUpdate = function () { registration.update().catch(function () {}); };
+        checkUpdate();
+        document.addEventListener("visibilitychange", function () {
+          if (document.visibilityState === "visible") checkUpdate();
+        });
       })
       .catch(function (error) {
         console.warn("[PWA] Service worker registration failed:", error);
