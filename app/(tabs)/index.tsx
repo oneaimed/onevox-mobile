@@ -21,7 +21,7 @@ import * as Sharing from "expo-sharing";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { OneVoxWordmark } from "@/components/brand/brand-bits";
+import { OneVoxWordmark, PoweredByOneAI } from "@/components/brand/brand-bits";
 import { useColors } from "@/hooks/use-colors";
 import { useSpeech } from "@/hooks/use-speech";
 import { useOneVox } from "@/lib/onevox-store";
@@ -107,7 +107,7 @@ export default function TecladoScreen() {
   return (
     <ScreenContainer className="px-5">
       <View style={styles.header}>
-        <OneVoxWordmark size={26} subtitle="COMUNICAÇÃO COM SUA VOZ" />
+        <OneVoxWordmark size={24} />
       </View>
 
       <ScrollView
@@ -199,6 +199,7 @@ export default function TecladoScreen() {
           </Text>
         </TouchableOpacity>
       </ScrollView>
+      <PoweredByOneAI />
       {lastAudioUrl ? <FloatingShareButton audioUrl={lastAudioUrl} /> : null}
     </ScreenContainer>
   );
@@ -364,8 +365,8 @@ function QuickButton({
 const styles = StyleSheet.create({
   header: {
     alignItems: "center",
-    paddingTop: 8,
-    paddingBottom: 12,
+    paddingTop: 4,
+    paddingBottom: 8,
   },
   inputCard: {
     borderRadius: 16,
