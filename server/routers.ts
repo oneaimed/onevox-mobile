@@ -9,7 +9,7 @@ import { transcribeAudio } from "./_core/voiceTranscription";
 import { getSupabaseAdmin } from "./supabase";
 import { generateSpeech, getVoice, listVoices } from "./elevenlabs";
 import { interpretTextDetailed } from "./interpret";
-import { storageKeyFromUrl, storagePut } from "./storage";
+import { storageGetSignedUrl, storageKeyFromUrl, storagePut } from "./storage";
 import { logUsage } from "./usage";
 
 // Voz clonada padrao (Roberto Dias). Usada como fallback quando o perfil do
@@ -122,7 +122,6 @@ const voiceRouter = router({
         const { url } = await storagePut(`recordings/${Date.now()}.${ext}`, buffer, input.mimeType);
         // The transcription service runs server-side and needs an absolute URL.
         // Resolve the storage key to a signed (absolute) URL.
-        const { storageGetSignedUrl } = await import("./storage");
         const key = storageKeyFromUrl(url);
         audioUrl = await storageGetSignedUrl(key);
       } catch (error) {
