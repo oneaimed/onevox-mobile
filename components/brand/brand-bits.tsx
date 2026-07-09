@@ -3,7 +3,7 @@ import { Image, StyleSheet, Text, View, type ViewStyle, type TextStyle } from "r
 import { LinearGradient } from "expo-linear-gradient";
 import MaskedView from "@react-native-masked-view/masked-view";
 
-import { brandGradient } from "@/theme.config";
+import { brandGradient, DISPLAY_FONT, BODY_FONT } from "@/theme.config";
 
 const ONEAI_SHIELD = require("@/assets/images/Logo OneAI só escudo.jpeg");
 
@@ -15,7 +15,7 @@ export function OneVoxWordmark({ size = 24, subtitle }: { size?: number; subtitl
     <View style={styles.wordmarkWrap}>
       <View style={styles.row}>
         <Text style={[styles.word, { fontSize: size }]}>One</Text>
-        <Text style={[styles.vox, { fontSize: size }]}>Vox</Text>
+        <GradientText text="Vox" style={styles.vox as TextStyle} fontSize={size} />
       </View>
       {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
     </View>
@@ -38,15 +38,24 @@ export function PoweredByOneAI({ style }: { style?: ViewStyle }) {
 /**
  * Text painted with the brand gradient using a mask.
  */
-export function GradientText({ text, style }: { text: string; style?: TextStyle }) {
+export function GradientText({
+  text,
+  style,
+  fontSize,
+}: {
+  text: string;
+  style?: TextStyle;
+  fontSize?: number;
+}) {
+  const textStyle = [style, fontSize ? { fontSize } : null] as TextStyle[];
   return (
-    <MaskedView maskElement={<Text style={[style, { backgroundColor: "transparent" }]}>{text}</Text>}>
+    <MaskedView maskElement={<Text style={[textStyle, { backgroundColor: "transparent" }]}>{text}</Text>}>
       <LinearGradient
         colors={brandGradient as [string, string, ...string[]]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
       >
-        <Text style={[style, { opacity: 0 }]}>{text}</Text>
+        <Text style={[textStyle, { opacity: 0 }]}>{text}</Text>
       </LinearGradient>
     </MaskedView>
   );
@@ -97,16 +106,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   word: {
+    fontFamily: DISPLAY_FONT,
     color: "#FFFFFF",
-    fontWeight: "800",
+    fontWeight: "700",
     letterSpacing: 0.3,
   },
   vox: {
+    fontFamily: DISPLAY_FONT,
     color: "#34D8A0",
-    fontWeight: "800",
+    fontWeight: "700",
     letterSpacing: 0.3,
+    // A cor acima e fallback; o GradientText pinta com o degrade verde->ciano.
   },
   subtitle: {
+    fontFamily: BODY_FONT,
     color: "#8A9BB5",
     fontSize: 11,
     marginTop: 1,
@@ -120,6 +133,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   poweredText: {
+    fontFamily: BODY_FONT,
     color: "#5E6E88",
     fontSize: 11,
     fontWeight: "500",
@@ -130,6 +144,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   poweredBrand: {
+    fontFamily: BODY_FONT,
     color: "#8A9BB5",
     fontSize: 12,
     fontWeight: "700",

@@ -48,7 +48,7 @@ body,
 #root {
   background: #0A1628;
   min-height: 100%;
-  font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
 html {
@@ -82,7 +82,7 @@ export default function Root({ children }: PropsWithChildren) {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
         />
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" type="image/png" sizes="196x196" href="/favicon.png" />

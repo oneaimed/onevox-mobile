@@ -26,9 +26,9 @@ import { useColors } from "@/hooks/use-colors";
 import { useSpeech } from "@/hooks/use-speech";
 import { useOneVox } from "@/lib/onevox-store";
 import { trpc } from "@/lib/trpc";
-import { brandGradient } from "@/theme.config";
+import { brandGradient, BODY_FONT } from "@/theme.config";
 
-const FONT = "Poppins";
+const FONT = BODY_FONT;
 
 export default function TecladoScreen() {
   const colors = useColors();

@@ -18,4 +18,8 @@ const themeColors = {
 // Brand gradient (green -> cyan), reused by buttons, borders and accents.
 const brandGradient = ['#5DE89B', '#34D8A0', '#3AAEE6'];
 
-module.exports = { themeColors, brandGradient };
+// Tipografia: Space Grotesk nos titulos/marca, Inter no texto e UI.
+const DISPLAY_FONT = 'Space Grotesk';
+const BODY_FONT = 'Inter';
+
+module.exports = { themeColors, brandGradient, DISPLAY_FONT, BODY_FONT };
