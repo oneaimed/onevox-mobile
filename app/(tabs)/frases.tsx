@@ -40,10 +40,8 @@ export default function FrasesScreen() {
     if (Platform.OS !== "web") Haptics.impactAsync(style);
   };
 
-  const filtered = useMemo(
-    () => phrases.filter((p) => p.category === activeCat),
-    [phrases, activeCat],
-  );
+  const filtered = useMemo(() => phrases.filter((p) => p.category === activeCat), [phrases, activeCat]);
+  const activeColor = CATEGORIES.find((c) => c.key === activeCat)?.color ?? colors.primary;
 
   const handleSpeak = (phrase: Phrase) => {
     haptic(Haptics.ImpactFeedbackStyle.Medium);
@@ -58,21 +56,14 @@ export default function FrasesScreen() {
     setModalOpen(false);
   };
 
-  const activeColor = CATEGORIES.find((c) => c.key === activeCat)?.color ?? colors.primary;
-
   return (
     <ScreenContainer className="px-5">
       <View style={styles.header}>
         <OneVoxWordmark size={26} subtitle="FRASES RÁPIDAS" />
       </View>
 
-      {/* Category tabs */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.catRow}
-        style={{ flexGrow: 0 }}
-      >
+      {/* Categorias — 4 lado a lado, compactas */}
+      <View style={styles.catRow}>
         {CATEGORIES.map((cat) => {
           const active = cat.key === activeCat;
           return (
@@ -82,20 +73,21 @@ export default function FrasesScreen() {
                 haptic();
                 setActiveCat(cat.key);
               }}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
               style={[
-                styles.catChip,
+                styles.catTab,
                 {
                   backgroundColor: active ? cat.color : colors.surface,
                   borderColor: active ? cat.color : colors.border,
                 },
               ]}
             >
-              <IconSymbol name={cat.icon} size={18} color={active ? "#0A1628" : cat.color} />
+              <IconSymbol name={cat.icon} size={20} color={active ? "#0A1628" : cat.color} />
               <Text
+                numberOfLines={1}
                 style={[
                   styles.catLabel,
-                  { color: active ? "#0A1628" : colors.foreground, fontWeight: active ? "700" : "600" },
+                  { color: active ? "#0A1628" : colors.muted, fontWeight: active ? "700" : "600" },
                 ]}
               >
                 {cat.label}
@@ -103,64 +95,60 @@ export default function FrasesScreen() {
             </TouchableOpacity>
           );
         })}
-      </ScrollView>
+      </View>
 
+      {/* Lista de frases — linhas enxutas */}
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 16, paddingTop: 4, gap: 12 }}
+        contentContainerStyle={{ paddingBottom: 24, paddingTop: 2, gap: 10 }}
         showsVerticalScrollIndicator={false}
       >
         {filtered.map((phrase) => (
-          <Pressable
+          <View
             key={phrase.id}
-            onPress={() => handleSpeak(phrase)}
-            onLongPress={() => {
-              haptic(Haptics.ImpactFeedbackStyle.Heavy);
-              removePhrase(phrase.id);
-            }}
-            disabled={state !== "idle"}
-            style={({ pressed }) => [
-              styles.phraseCard,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-              pressed && { opacity: 0.7 },
-            ]}
+            style={[styles.phraseRow, { backgroundColor: colors.surface, borderColor: colors.border }]}
           >
-            <View style={[styles.phraseIcon, { backgroundColor: activeColor + "22" }]}>
-              <IconSymbol name="speaker.wave.2.fill" size={20} color={activeColor} />
-            </View>
-            <Text
-              style={[styles.phraseText, { color: colors.foreground, fontSize: fontSizeFor(17) }]}
-              numberOfLines={3}
+            <Pressable
+              onPress={() => handleSpeak(phrase)}
+              disabled={state !== "idle"}
+              style={({ pressed }) => [styles.phraseTap, pressed && { opacity: 0.6 }]}
             >
-              {phrase.text}
-            </Text>
-          </Pressable>
+              <IconSymbol name="speaker.wave.2.fill" size={20} color={activeColor} />
+              <Text
+                style={[styles.phraseText, { color: colors.foreground, fontSize: fontSizeFor(17) }]}
+                numberOfLines={2}
+              >
+                {phrase.text}
+              </Text>
+            </Pressable>
+            <TouchableOpacity
+              onPress={() => {
+                haptic(Haptics.ImpactFeedbackStyle.Medium);
+                removePhrase(phrase.id);
+              }}
+              hitSlop={8}
+              accessibilityLabel="Remover frase"
+              style={styles.removeBtn}
+            >
+              <IconSymbol name="xmark" size={16} color={colors.muted} />
+            </TouchableOpacity>
+          </View>
         ))}
 
-        <Text style={[styles.hint, { color: colors.muted }]}>
-          Toque para falar · Pressione e segure para excluir
-        </Text>
+        {/* Adicionar frase — inline, tracejado */}
+        <TouchableOpacity
+          onPress={() => {
+            haptic();
+            setModalOpen(true);
+          }}
+          activeOpacity={0.8}
+          style={[styles.addBtn, { borderColor: colors.border }]}
+        >
+          <IconSymbol name="plus" size={18} color={colors.muted} />
+          <Text style={[styles.addText, { color: colors.muted }]}>Adicionar frase</Text>
+        </TouchableOpacity>
       </ScrollView>
 
-      {/* Add button */}
-      <TouchableOpacity
-        onPress={() => {
-          haptic();
-          setModalOpen(true);
-        }}
-        activeOpacity={0.85}
-        style={styles.fab}
-      >
-        <LinearGradient
-          colors={brandGradient as [string, string, ...string[]]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.fabInner}
-        >
-          <IconSymbol name="plus" size={28} color="#0A1628" />
-        </LinearGradient>
-      </TouchableOpacity>
-
-      {/* Add modal */}
+      {/* Modal nova frase */}
       <Modal visible={modalOpen} transparent animationType="fade" onRequestClose={() => setModalOpen(false)}>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: colors.surfaceElevated }]}>
@@ -174,7 +162,10 @@ export default function FrasesScreen() {
               placeholder="Digite a frase..."
               placeholderTextColor={colors.muted}
               multiline
-              style={[styles.modalInput, { color: colors.foreground, backgroundColor: colors.surface, borderColor: colors.border }]}
+              style={[
+                styles.modalInput,
+                { color: colors.foreground, backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
             />
             <View style={styles.modalActions}>
               <TouchableOpacity
@@ -206,60 +197,50 @@ export default function FrasesScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { alignItems: "center", paddingTop: 8, paddingBottom: 12 },
-  catRow: { gap: 10, paddingVertical: 8, paddingRight: 8 },
-  catChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-    paddingHorizontal: 16,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1,
-  },
-  catLabel: { fontSize: 14 },
-  phraseCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    minHeight: 72,
-  },
-  phraseIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  phraseText: { flex: 1, fontWeight: "600", lineHeight: 24 },
-  hint: { textAlign: "center", fontSize: 12, marginTop: 8 },
-  fab: {
-    position: "absolute",
-    right: 20,
-    bottom: 20,
-    borderRadius: 30,
-    shadowColor: "#34D8A0",
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
-  },
-  fabInner: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  modalOverlay: {
+  header: { alignItems: "center", paddingTop: 8, paddingBottom: 10 },
+  catRow: { flexDirection: "row", gap: 8, paddingVertical: 4 },
+  catTab: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    minHeight: 60,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: "center",
     justifyContent: "center",
-    padding: 24,
+    gap: 5,
+    paddingHorizontal: 4,
   },
+  catLabel: { fontSize: 11 },
+  phraseRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  phraseTap: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    minHeight: 58,
+  },
+  phraseText: { flex: 1, fontWeight: "600", lineHeight: 23 },
+  removeBtn: { paddingHorizontal: 14, alignSelf: "stretch", alignItems: "center", justifyContent: "center" },
+  addBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    minHeight: 54,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    marginTop: 2,
+  },
+  addText: { fontSize: 14, fontWeight: "600" },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", padding: 24 },
   modalCard: { borderRadius: 20, padding: 22 },
   modalTitle: { fontSize: 20, fontWeight: "700" },
   modalSub: { fontSize: 13, marginTop: 4, marginBottom: 16 },
