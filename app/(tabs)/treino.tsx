@@ -142,7 +142,7 @@ export default function TreinoScreen() {
     haptic();
     const ok = await recorder.start();
     if (ok) setRecPhase("recording");
-    else setErrorMsg("Nao foi possivel acessar o microfone. Verifique as permissoes.");
+    else setErrorMsg("Não foi possível acessar o microfone. Verifique as permissões.");
   };
 
   const handleStopRec = async () => {
@@ -150,7 +150,7 @@ export default function TreinoScreen() {
     const durationMs = recorder.durationMs;
     const result = await recorder.stop();
     if (!result) {
-      setErrorMsg("Nao foi possivel capturar o audio. Tente novamente.");
+      setErrorMsg("Não foi possível capturar o áudio. Tente novamente.");
       setRecPhase("idle");
       return;
     }
@@ -204,7 +204,7 @@ export default function TreinoScreen() {
       setRecPhase("idle");
       advanceAfter(current.id);
     } catch (e) {
-      setErrorMsg(e instanceof Error ? e.message : "Falha ao salvar a gravacao.");
+      setErrorMsg(e instanceof Error ? e.message : "Falha ao salvar a gravação.");
       setRecPhase("review");
     }
   };
@@ -272,18 +272,23 @@ export default function TreinoScreen() {
           <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.cardHeader}>
               <IconSymbol name="graduationcap.fill" size={22} color={colors.primary} />
-              <Text style={[styles.cardTitle, { color: colors.foreground }]}>Participe da pesquisa</Text>
+              <Text style={[styles.cardTitle, { color: colors.foreground }]}>Termo de consentimento</Text>
             </View>
             <Text style={[styles.consentText, { color: colors.foreground }]}>
-              No treino de voz voce le frases em voz alta e grava a sua fala.
+              No treino de voz, você lê frases em voz alta e grava a sua própria fala.
             </Text>
             <Text style={[styles.consentText, { color: colors.muted }]}>
-              Essas gravacoes sao usadas na nossa pesquisa para melhorar os modelos que entendem e
-              transcrevem a sua voz. Cada audio fica vinculado a frase que voce leu e a sua conta.
+              Essas gravações são usadas apenas para pesquisa e desenvolvimento: melhorar os modelos
+              que entendem e transcrevem a fala de pacientes com dificuldades. Cada áudio fica
+              vinculado à frase lida e à sua conta.
             </Text>
             <Text style={[styles.consentText, { color: colors.muted }]}>
-              A sua voz e um dado pessoal e fica guardada de forma segura. A participacao e
-              voluntaria e voce pode parar quando quiser.
+              Sua voz é um dado pessoal e fica armazenada de forma segura, com acesso restrito à
+              equipe. Não coletamos dados de saúde nesta etapa.
+            </Text>
+            <Text style={[styles.consentText, { color: colors.muted }]}>
+              A participação é voluntária e você pode parar quando quiser. Ao tocar em “Aceito
+              participar”, você concorda em contribuir com a pesquisa.
             </Text>
           </View>
 
@@ -349,7 +354,7 @@ export default function TreinoScreen() {
           {total === 0 ? (
             <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Text style={[styles.consentText, { color: colors.muted }]}>
-                O catalogo de frases ainda nao esta disponivel. Tente novamente mais tarde.
+                O catálogo de frases ainda não está disponível. Tente novamente mais tarde.
               </Text>
             </View>
           ) : allDone ? (
@@ -359,13 +364,13 @@ export default function TreinoScreen() {
                 <Text style={[styles.cardTitle, { color: colors.foreground }]}>Tudo pronto!</Text>
               </View>
               <Text style={[styles.consentText, { color: colors.muted }]}>
-                Voce gravou todas as {total} frases. Muito obrigado por contribuir com a pesquisa.
+                Você gravou todas as {total} frases. Muito obrigado por contribuir com a pesquisa.
               </Text>
             </View>
           ) : (
             <>
               <Text style={[styles.hint, { color: colors.muted }]}>
-                Leia cada frase em voz alta, grave, ouca para conferir e confirme. Rapido e no seu ritmo.
+                Leia cada frase em voz alta, grave, ouça para conferir e confirme. Rápido e no seu ritmo.
               </Text>
               <TouchableOpacity onPress={startSession} activeOpacity={0.85}>
                 <LinearGradient
@@ -376,7 +381,7 @@ export default function TreinoScreen() {
                 >
                   <IconSymbol name="mic.fill" size={20} color="#0A1628" />
                   <Text style={styles.primaryText}>
-                    {doneCount > 0 ? "Continuar treino" : "Comecar treino"}
+                    {doneCount > 0 ? "Continuar treino" : "Começar treino"}
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -419,7 +424,7 @@ export default function TreinoScreen() {
               {doneSet.has(current.id) ? (
                 <View style={styles.doneTag}>
                   <IconSymbol name="checkmark.circle.fill" size={15} color={colors.success} />
-                  <Text style={[styles.doneTagText, { color: colors.success }]}>Ja gravada</Text>
+                  <Text style={[styles.doneTagText, { color: colors.success }]}>Já gravada</Text>
                 </View>
               ) : null}
               <Text style={[styles.readLabel, { color: colors.muted }]}>LEIA EM VOZ ALTA</Text>
@@ -485,7 +490,7 @@ export default function TreinoScreen() {
             >
               <IconSymbol name={playing ? "stop.fill" : "play.fill"} size={22} color={colors.primary} />
               <Text style={[styles.reviewBtnText, { color: colors.foreground }]}>
-                {playing ? "Parar" : "Ouvir a gravacao"}
+                {playing ? "Parar" : "Ouvir a gravação"}
               </Text>
             </TouchableOpacity>
 
@@ -506,7 +511,7 @@ export default function TreinoScreen() {
                   style={styles.confirmBtn}
                 >
                   <IconSymbol name="checkmark" size={20} color="#0A1628" />
-                  <Text style={styles.primaryText}>Confirmar e proxima</Text>
+                  <Text style={styles.primaryText}>Confirmar e próxima</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
@@ -516,7 +521,7 @@ export default function TreinoScreen() {
         {recPhase === "saving" && (
           <View style={styles.centerArea}>
             <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={[styles.savingText, { color: colors.foreground }]}>Salvando gravacao...</Text>
+            <Text style={[styles.savingText, { color: colors.foreground }]}>Salvando gravação...</Text>
           </View>
         )}
       </ScrollView>
