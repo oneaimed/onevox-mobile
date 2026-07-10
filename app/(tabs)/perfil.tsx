@@ -77,12 +77,19 @@ export default function PerfilScreen() {
           <View style={[styles.voiceInner, { backgroundColor: colors.surfaceElevated }]}>
             <View style={styles.voiceTop}>
               <View style={[styles.avatar, { borderColor: colors.primary }]}>
-                <IconSymbol name="waveform" size={30} color={colors.primary} />
+                <IconSymbol name="waveform" size={22} color={colors.primary} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.voiceName, { color: colors.foreground }]} numberOfLines={1}>
-                  {displayName}
-                </Text>
+                <View style={styles.nameRow}>
+                  <Text style={[styles.voiceName, { color: colors.foreground }]} numberOfLines={2}>
+                    {displayName}
+                  </Text>
+                  {isAdmin ? (
+                    <View style={[styles.adminBadge, { borderColor: colors.primary }]}>
+                      <Text style={[styles.adminBadgeText, { color: colors.primary }]}>ADMIN</Text>
+                    </View>
+                  ) : null}
+                </View>
                 {email ? (
                   <Text style={[styles.voiceEmail, { color: colors.muted }]} numberOfLines={1}>
                     {email}
@@ -105,11 +112,6 @@ export default function PerfilScreen() {
                   </Text>
                 </View>
               </View>
-              {isAdmin ? (
-                <View style={[styles.adminBadge, { borderColor: colors.primary }]}>
-                  <Text style={[styles.adminBadgeText, { color: colors.primary }]}>ADMIN</Text>
-                </View>
-              ) : null}
             </View>
 
             <TouchableOpacity
@@ -318,14 +320,15 @@ const styles = StyleSheet.create({
   voiceInner: { borderRadius: 20, padding: 18 },
   voiceTop: { flexDirection: "row", alignItems: "center", gap: 14 },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
   },
-  voiceName: { fontSize: 18, fontWeight: "700" },
+  nameRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+  voiceName: { flex: 1, fontSize: 17, fontWeight: "700", lineHeight: 21 },
   voiceEmail: { fontSize: 13, marginTop: 2 },
   adminCta: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   adminBadge: {
