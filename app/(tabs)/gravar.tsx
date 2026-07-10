@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -194,9 +195,23 @@ export default function GravarScreen() {
                 <View style={styles.cardHeader}>
                   <IconSymbol name="sparkles" size={18} color={colors.primary} />
                   <Text style={[styles.cardLabel, { color: colors.primary }]}>MENSAGEM INTERPRETADA</Text>
+                  <View style={{ flex: 1 }} />
+                  <IconSymbol name="pencil" size={15} color={colors.muted} />
                 </View>
-                <Text style={[styles.cardText, { color: colors.foreground, fontSize: fontSizeFor(20), fontWeight: "600" }]}>
-                  {interpreted}
+                <TextInput
+                  value={interpreted}
+                  onChangeText={setInterpreted}
+                  multiline
+                  placeholder="Mensagem interpretada..."
+                  placeholderTextColor={colors.muted}
+                  textAlignVertical="top"
+                  style={[
+                    styles.interpretedInput,
+                    { color: colors.foreground, fontSize: fontSizeFor(20), borderColor: colors.border },
+                  ]}
+                />
+                <Text style={[styles.editHint, { color: colors.muted }]}>
+                  Toque para editar antes de falar.
                 </Text>
               </View>
             </LinearGradient>
@@ -298,6 +313,16 @@ const styles = StyleSheet.create({
   cardHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
   cardLabel: { fontSize: 12, fontWeight: "700", letterSpacing: 1 },
   cardText: { lineHeight: 26 },
+  interpretedInput: {
+    fontWeight: "600",
+    lineHeight: 26,
+    minHeight: 60,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  editHint: { fontSize: 12, marginTop: 8 },
   resultBorder: { borderRadius: 18, padding: 2 },
   resultInner: { borderRadius: 16, padding: 16 },
   playBtn: {
