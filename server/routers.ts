@@ -263,6 +263,93 @@ const usageRouter = router({
     }));
   }),
 
+  // Painel de uso (admin): totais, por operacao, por usuario, por dia (14d) e
+  // eventos recentes com horario. Uma unica chamada, pensada pra tela mobile.
+  adminDashboard: adminProcedure.query(async () => {
+    const admin = getSupabaseAdmin();
+    if (!admin) {
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Supabase indisponivel" });
+    }
+    const { data, error } = await admin
+      .from("uso")
+      .select(
+        "user_id, criado_em, provedor, operacao, tokens_in, tokens_out, caracteres, segundos_audio, custo_usd, latencia_ms, sucesso",
+      )
+      .order("criado_em", { ascending: false })
+      .limit(3000);
+    if (error) {
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: error.message });
+    }
+    const rows = (data ?? []) as (UsoRow & {
+      criado_em: string;
+      operacao: string;
+      provedor: string;
+      latencia_ms: number | null;
+      sucesso: boolean | null;
+    })[];
+
+    const { data: perfis } = await admin.from("perfis").select("id, nome");
+    const nameById = new Map<string, string | null>(
+      ((perfis ?? []) as { id: string; nome: string | null }[]).map((p) => [p.id, p.nome]),
+    );
+
+    const totals = emptyAgg();
+    const byUser = new Map<string, Agg>();
+    const byOperation = new Map<string, Agg>();
+    const byDay = new Map<string, { costUsd: number; calls: number }>();
+
+    for (const r of rows) {
+      accumulate(totals, r);
+      const uKey = r.user_id ?? "";
+      const uAgg = byUser.get(uKey) ?? emptyAgg();
+      accumulate(uAgg, r);
+      byUser.set(uKey, uAgg);
+
+      const oAgg = byOperation.get(r.operacao) ?? emptyAgg();
+      accumulate(oAgg, r);
+      byOperation.set(r.operacao, oAgg);
+
+      const day = (r.criado_em ?? "").slice(0, 10);
+      if (day) {
+        const d = byDay.get(day) ?? { costUsd: 0, calls: 0 };
+        d.costUsd += Number(r.custo_usd) || 0;
+        d.calls += 1;
+        byDay.set(day, d);
+      }
+    }
+
+    const recent = rows.slice(0, 40).map((r) => ({
+      criadoEm: r.criado_em,
+      userId: r.user_id ?? "",
+      name: nameById.get(r.user_id ?? "") ?? null,
+      provedor: r.provedor,
+      operacao: r.operacao,
+      custoUsd: Number(r.custo_usd) || 0,
+      caracteres: Number(r.caracteres) || 0,
+      segundosAudio: Number(r.segundos_audio) || 0,
+      latenciaMs: Number(r.latencia_ms) || 0,
+      sucesso: r.sucesso !== false,
+    }));
+
+    return {
+      totals: finalize(totals),
+      byUser: Array.from(byUser.entries()).map(([userId, agg]) => ({
+        userId,
+        name: nameById.get(userId) ?? null,
+        ...finalize(agg),
+      })),
+      byOperation: Array.from(byOperation.entries()).map(([operacao, agg]) => ({
+        operacao,
+        ...finalize(agg),
+      })),
+      byDay: Array.from(byDay.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .slice(-14)
+        .map(([day, v]) => ({ day, costUsd: Math.round(v.costUsd * 1e6) / 1e6, calls: v.calls })),
+      recent,
+    };
+  }),
+
   // Consumo do proprio usuario logado.
   mine: protectedProcedure.query(async ({ ctx }) => {
     const admin = getSupabaseAdmin();

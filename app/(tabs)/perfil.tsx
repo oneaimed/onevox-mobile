@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -35,10 +36,10 @@ export default function PerfilScreen() {
   const { signOut } = useAuth();
 
   // Dados reais do paciente logado (nome/email/voz/role) e consumo.
+  const router = useRouter();
   const me = trpc.auth.me.useQuery();
   const mine = trpc.usage.mine.useQuery();
   const isAdmin = me.data?.role === "admin";
-  const adminSummary = trpc.usage.summaryByUser.useQuery(undefined, { enabled: isAdmin });
 
   const displayName = me.data?.name || me.data?.email?.split("@")[0] || "Paciente";
   const email = me.data?.email ?? "";
@@ -254,32 +255,17 @@ export default function PerfilScreen() {
           </View>
         </View>
 
-        {/* Consumo por usuario — somente admin */}
+        {/* Painel de uso — somente admin */}
         {isAdmin ? (
-          <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={styles.sectionHeader}>
-              <IconSymbol name="person.fill" size={20} color={colors.primary} />
-              <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Consumo por usuário</Text>
-            </View>
-            {adminSummary.isLoading ? (
-              <Text style={[styles.sectionDesc, { color: colors.muted, marginTop: 8 }]}>Carregando...</Text>
-            ) : (adminSummary.data ?? []).length === 0 ? (
-              <Text style={[styles.sectionDesc, { color: colors.muted, marginTop: 8 }]}>Sem uso registrado ainda.</Text>
-            ) : (
-              <View style={{ marginTop: 10, gap: 8 }}>
-                {(adminSummary.data ?? []).map((u) => (
-                  <View key={u.userId} style={[styles.adminRow, { borderColor: colors.border }]}>
-                    <Text style={[styles.adminName, { color: colors.foreground }]} numberOfLines={1}>
-                      {u.name || u.userId.slice(0, 8)}
-                    </Text>
-                    <Text style={[styles.adminMeta, { color: colors.muted }]}>
-                      {u.calls} falas · US$ {u.costUsd.toFixed(4)}
-                    </Text>
-                  </View>
-                ))}
+          <TouchableOpacity onPress={() => { haptic(); router.push("/uso"); }} activeOpacity={0.85}>
+            <View style={[styles.section, styles.adminCta, { backgroundColor: colors.surface, borderColor: colors.primary }]}>
+              <View style={styles.sectionHeader}>
+                <IconSymbol name="waveform" size={20} color={colors.primary} />
+                <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Painel de uso</Text>
               </View>
-            )}
-          </View>
+              <IconSymbol name="chevron.right" size={22} color={colors.primary} />
+            </View>
+          </TouchableOpacity>
         ) : null}
 
         {/* Support */}
@@ -339,8 +325,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  voiceName: { fontSize: 20, fontWeight: "700" },
+  voiceName: { fontSize: 18, fontWeight: "700" },
   voiceEmail: { fontSize: 13, marginTop: 2 },
+  adminCta: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   adminBadge: {
     borderWidth: 1,
     borderRadius: 8,
@@ -353,18 +340,6 @@ const styles = StyleSheet.create({
   stat: { flex: 1, alignItems: "center", gap: 2 },
   statValue: { fontSize: 16, fontWeight: "700", fontVariant: ["tabular-nums"] },
   statLabel: { fontSize: 10, fontWeight: "600", textAlign: "center" },
-  adminRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    gap: 8,
-  },
-  adminName: { flex: 1, fontSize: 14, fontWeight: "600" },
-  adminMeta: { fontSize: 12, fontVariant: ["tabular-nums"] },
   activePill: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   activeText: { fontSize: 13, fontWeight: "600" },
