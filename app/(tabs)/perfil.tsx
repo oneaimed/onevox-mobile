@@ -38,7 +38,6 @@ export default function PerfilScreen() {
   // Dados reais do paciente logado (nome/email/voz/role) e consumo.
   const router = useRouter();
   const me = trpc.auth.me.useQuery();
-  const mine = trpc.usage.mine.useQuery();
   const isAdmin = me.data?.role === "admin";
 
   const displayName = me.data?.name || me.data?.email?.split("@")[0] || "Paciente";
@@ -243,20 +242,6 @@ export default function PerfilScreen() {
           )}
         </View>
 
-        {/* Seu consumo */}
-        <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.sectionHeader}>
-            <IconSymbol name="waveform" size={20} color={colors.primary} />
-            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Seu consumo</Text>
-          </View>
-          <View style={styles.statRow}>
-            <Stat label="Falas" value={String(mine.data?.calls ?? 0)} colors={colors} />
-            <Stat label="Caracteres" value={String(mine.data?.characters ?? 0)} colors={colors} />
-            <Stat label="Áudio (min)" value={String(mine.data?.audioMinutes ?? 0)} colors={colors} />
-            <Stat label="Custo (US$)" value={(mine.data?.costUsd ?? 0).toFixed(4)} colors={colors} />
-          </View>
-        </View>
-
         {/* Painel de uso — somente admin */}
         {isAdmin ? (
           <TouchableOpacity onPress={() => { haptic(); router.push("/uso"); }} activeOpacity={0.85}>
@@ -293,27 +278,6 @@ export default function PerfilScreen() {
   );
 }
 
-function Stat({
-  label,
-  value,
-  colors,
-}: {
-  label: string;
-  value: string;
-  colors: ReturnType<typeof useColors>;
-}) {
-  return (
-    <View style={styles.stat}>
-      <Text style={[styles.statValue, { color: colors.foreground }]} numberOfLines={1}>
-        {value}
-      </Text>
-      <Text style={[styles.statLabel, { color: colors.muted }]} numberOfLines={1}>
-        {label}
-      </Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   header: { alignItems: "center", paddingTop: 4, paddingBottom: 8 },
   voiceBorder: { borderRadius: 22, padding: 2 },
@@ -339,10 +303,6 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   adminBadgeText: { fontSize: 10, fontWeight: "800", letterSpacing: 1 },
-  statRow: { flexDirection: "row", gap: 8, marginTop: 14 },
-  stat: { flex: 1, alignItems: "center", gap: 2 },
-  statValue: { fontSize: 16, fontWeight: "700", fontVariant: ["tabular-nums"] },
-  statLabel: { fontSize: 10, fontWeight: "600", textAlign: "center" },
   activePill: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   activeText: { fontSize: 13, fontWeight: "600" },
